@@ -1,0 +1,176 @@
+import { useRef } from 'react'
+
+const products = [
+  { name: 'BLAZER STRUCTURÉ', price: '129,00 €', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAO1WaJWUWGKeVkVIHdSfE6aFy8co2whumXdnYE4ZXrrYX2W7-1bJZvsE5v-tdS84cObJhShv_k-MxlGx1RpNhv2_mdDV0p7NXMiUJ4drgEl1bWyDEGRyYum9mDC77ux0M_IbtIl6UYn_fRoiQASjnHxOvsjreFJwNoLn3vtNrXjwnlvbyxz7_IgVjsdxwsBuZw-9NldoyqVkEeKzc6RO7MHBKOrI2Q0-cs7DEj-J1wrFlh5_yPw5ife_ufFWYFoKw-2t7y4CxGWAip' },
+  { name: 'MANTEAU OVERSIZE LAINE', price: '189,00 €', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCHG6ccHmyAE_E7Zlz4okwFL-eeSp-mN0ZTO_8WfUsk6POCZJLxAjfMU9lleiJ618w9cNHpK2QYvJBFUz7P2z-jE4dsa7itvABJT-v4EO0EkBF1_GlHHVaqovdAY9Z_jAPp6-m4PdubcMT4fZ2674_kMxHZcckl1KOH1R_o_6VX68tX4zVvL_0nVc-sjgfJDY4ET_9BbNkG-B3RljGvw49Y2eQ2bP2amjowb0vdXh9WQ1I8SQH5MWAl9_l7PUeEZ1wYFaAFIhk7vsTM' },
+  { name: 'T-SHIRT COTON PREMIUM', price: '45,00 €', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuChMv7OtAm-bmYErEDesxIbgLL4gIr3-Wl8stQZtNRXQBLC7p-ReuHgfwMNuAXiR76tHN8yEoOKtt1SIpfDnJVsshhDKFXRZ0hugidflRlULhQ-Da4TcqbOONWra7T9usIdXQiysoJwLoVrmrFAOdqdLBOtUTmKakDSPGMe4nrvrjW56L2QErGWt1LlTcfz96ptBFIISUvm668PQCXUVbsA6SzEnRM7d73qQuIu70LkZpfSWjHEK3RWeL9-qq7parikxiDccEAOloc0' },
+  { name: 'PANTALON TAILLE HAUTE', price: '89,00 €', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAPse9yr-R0pimcoUCMSXsYuF3PwJuKpiP8_Tyj19xrgoYfGy9AF49fPGiROWXeMNCmhu2ffIbB_gp6_5mgjGppwWm8rYHP1CWmzSUnTaYe8QLbJhM9c9JoumqihcueI8st90N3Fp0J23lsregHv4yrTFoqTw_6Y9hhOZUbvy5drW244ZzoTLHTzEjnR9rxzKyutHSJKoYE2BB1P5mPT2kHq51QQUiOG6E7wBRg8MSNlyBROQLJwilXuRKSG5Wsigg4jPH3XQsF4E6T' },
+]
+
+const sliderItems = [
+  { name: 'ACCESSOIRES CUIR', sub: 'DÉCOUVRIR LA SÉLECTION', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCmDodCk4Oz1WTRJ8Xi0wZWlE8ugNGNEGGxDJfmsH3m8z_AxqkCVi0MB3JXXcnoM3jutzG30tcvp86mOJUXSbwAKd7MMlyIspVuoFx3_ytj_3knucKRuKlgCJFrJshSGDGAJev-Zn6ftl2j_tz9mwKlQ0vc_Aygysq_HGTDNqgxSix5F3lj9whpLVh1NOAsTVX5GYujNNXFx1FpE4cWUvSNwhVM0pXtnI-2AzVPTnQx0_pvFQZLcmYINFfdf3vzUnJpM5pmi_NBftHQ' },
+  { name: 'LOOKS MONOCHROMES', sub: 'DÉCOUVRIR LA SÉLECTION', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDqBtLnigrzAXJVWGlEwTXeFGu1QZ972-2CRYlJYPn7oxBOIezjYQ_LD7QiuL2aoG6-FxpkXJaTj-8e8CZIUy5AFXTZthLdUHMepnhZZQ59yC4psU2SACnq42-JWsNesZOaL1RtCddw6bWBVRIrBbbl4EH_np5pWP47fPSMxYbcaS7tuMid59Q4MnEGW_Ij00MmJRTKvm8qamcBoOaJQgON2dtzI46FaF_bt9EqSLVdElZNIpVvJnro6urAnMRqCwLEFpdF8Y6RC5w5' },
+  { name: 'COSTUMES MODERNES', sub: 'DÉCOUVRIR LA SÉLECTION', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCtDcNJkns9Ow4AbECI3iyyZ-2UHwLPzuK-4Gw6jgqz0HkuS4wHDy-sxL_NrTZnmTlrNxXnWRGR3mpLQijfD7jXxB3Qjgvvdc5GUGFmxJIBOj2Hucdj-Eyp_7nSf-hXecnqkwgjhX9lgPzWqkYzLDxnZl9jaZ67A2fWHrWqLJRD_tQ0Uj1OAtzVZKbD8lJMUVWik8jhxpezSuk_0RTUR4TCUoIlxh7ll_O8G9juDpk2c0siGjyoKBJoe5npStZ41QoG9-B6gXa3RpBs' },
+  { name: 'TEXTURES & MATIÈRES', sub: 'DÉCOUVRIR LA SÉLECTION', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDWpamewuT00DRTMBQkLvravLk3R5LoNStRe5le2_a_3qc2vaewWOeZf5_Nj9zxrhRdzGRjJRlVNRxtiLcVAnI96XLUuoq75ODsbGsO9FTK_0Wj1T1Aw2jv3fmOO4TzoLq3pMzJlRVuKOc88RgAkJOgg2oI74JLmE-lSGSZejQz0cIOd8L2Givt-wY58Un0mshuIxK9o0dXKy9pRUpmGGsxqTu7QBiuRpa2rrpdwbVFLQAOhya-z2Y06bftuON1mMed9QbuGoE9VVi7' },
+]
+
+export default function Home() {
+  const sliderRef = useRef(null)
+
+  return (
+    <>
+      {/* ─── Hero Section ─── */}
+      <section className="relative h-screen w-full overflow-hidden flex items-end justify-center pb-24 px-12">
+        <div className="absolute inset-0 bg-neutral-200">
+          <img
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1RXwJF0X1lzLRrqKyOkzfSZr45Lf5b8cBPMzvicjV_4PZnVZ4CHeXF7fOZMjtWOVG37NfQ9_Ozid8qHE7nkGB8b2e4GHpAWXwnwSg7_GbWg1DP_tEFSNME5kiJyhOllfyl_F4GXorXw6Fgt0Ayz1Y40KH2x60mxphb327Esosm0wj3Dxqa0dkia5PB1nIqsTtNPb_CX5Y-o1_TbRY-Cf1bYKI6TOxsKp_j3Hzm9DIfd6eGjUPPpmaGvcpz5ZLhzp1JtMuHsgzcVUd"
+            alt="High fashion editorial"
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div className="relative z-10 flex flex-col items-center gap-8">
+          <h1 className="text-white text-5xl md:text-8xl font-black tracking-[-0.04em] uppercase text-center leading-none">
+            NOUVELLE COLLECTION
+          </h1>
+          <a
+            href="#"
+            className="bg-white text-black px-10 py-4 font-bold tracking-[0.1em] text-[12px] uppercase hover:bg-black hover:text-white"
+          >
+            Explorer
+          </a>
+        </div>
+      </section>
+
+      {/* ─── Visual Collection Grid (Bento/Editorial) ─── */}
+      <section className="py-24 px-6 md:px-12 bg-surface">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 h-auto md:h-[800px]">
+          {/* Large left panel */}
+          <div className="md:col-span-7 relative group overflow-hidden bg-surface-container min-h-[400px]">
+            <img
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPiNrei9BjRqTBUPeWHJzFDqJsZzfmOrVKDymZVubtmkteFbO0KR0Fhn5T8LXFhfJUbsVpG9BW6iLnzIGpdmqpHuhFTET1XKFqUY-o8dG1pW8UoIizaN8ZLrPviR5eBFowBe2rjpXZ6DfBihAlnBogclJtSC-vwdFngHWnz23oEiIIEq95M2P4LYOy2VjUvO_Jo4hvFxH0Oww23apzIvZq_BXifxHfk02a6ZmNgbn3jIpOQiAZksQoZdRrMI1ZY_3eTNCLWNmubKED"
+              alt="New In collection"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute bottom-10 left-10">
+              <h2 className="text-white text-4xl font-bold uppercase mb-4">NEW IN</h2>
+              <a className="text-white border-b border-white pb-1 text-[11px] font-bold uppercase tracking-widest" href="#">
+                Voir plus
+              </a>
+            </div>
+          </div>
+
+          {/* Right two stacked panels */}
+          <div className="md:col-span-5 grid grid-rows-2 gap-4">
+            <div className="relative group overflow-hidden bg-surface-container min-h-[200px]">
+              <img
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmDAzRwjilcshlB77XIYgdAOFq1WOC2bW9CIrWQGKDSO_sZcLEvgI-mlshRoMW72TNTHDgpClu4zsYL58P2R41BLvf5egf6FWamCRsfjWXkqtJKRV2Q4FJWy4k4EDGZWVzJ72Te7yGS9HHIr7e_7V5cvfLaiku53xpo1dxPZ7zeNak20sk7UmqBUWTLh5wEDBhZoEIZhhx-YY_HPN0Xjv9byT6q17J85fsPtKQNdqT3QvufEzEJzXdNu5MTkuk6r1NQNZcZb1gaDVg"
+                alt="Summer collection"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute bottom-10 left-10">
+                <h2 className="text-white text-3xl font-bold uppercase mb-4">SUMMER</h2>
+                <a className="text-white border-b border-white pb-1 text-[11px] font-bold uppercase tracking-widest" href="#">
+                  Voir plus
+                </a>
+              </div>
+            </div>
+            <div className="relative group overflow-hidden bg-surface-container min-h-[200px]">
+              <img
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJclfC_uMNJ0cVszfLpEsjgjU2NGaafPl7VIwRK0N_fiPFaWmRZkBZkORc32HiCcZmTVcUsc6bSBDxAJjQq915pLH5HY07rGAIcZVTFGU5tDeXMCi0M0qYcq6RsybMP8eYSC3ddQGJ24c0afE4qPz0CtXzWni1EwJmxnHBm40shFKEHvwv--pAoAyrOXvZHzWoZ0jqM9jWanrnOdS7HENVesV3NaMDTb-su0AR87CK-ug11Jh7caMxyPe_hJ5BpPwtSO7mqUyI-qQ2"
+                alt="Essentials"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute bottom-10 left-10">
+                <h2 className="text-white text-3xl font-bold uppercase mb-4">ESSENTIALS</h2>
+                <a className="text-white border-b border-white pb-1 text-[11px] font-bold uppercase tracking-widest" href="#">
+                  Voir plus
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── New Products Grid ─── */}
+      <section className="py-24 px-6 md:px-12 bg-surface">
+        <div className="flex justify-between items-end mb-16">
+          <div>
+            <h2 className="text-[11px] font-bold tracking-[0.2em] uppercase text-neutral-400 mb-2">
+              Saison 2026
+            </h2>
+            <p className="text-3xl font-black tracking-tight uppercase">LES NOUVEAUTÉS</p>
+          </div>
+          <a className="text-[11px] font-bold uppercase underline underline-offset-8" href="#">
+            Tout voir
+          </a>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-12">
+          {products.map((p) => (
+            <div key={p.name} className="group cursor-pointer">
+              <div className="bg-white mb-6 relative overflow-hidden aspect-[3/4]">
+                <img
+                  src={p.img}
+                  alt={p.name}
+                  className="w-full h-full object-cover grayscale"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
+                <button className="absolute bottom-0 left-0 w-full bg-black text-white py-4 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300 font-bold text-[11px] uppercase tracking-widest">
+                  AJOUTER AU PANIER
+                </button>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[13px] font-bold uppercase tracking-tight">{p.name}</span>
+                <span className="text-[12px] text-neutral-500 font-medium">{p.price}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ─── You May Also Like Slider ─── */}
+      <section className="py-24 bg-surface-container-low overflow-hidden">
+        <div className="px-6 md:px-12 mb-12">
+          <h2 className="text-2xl font-black uppercase tracking-tighter">
+            VOUS POURRIEZ AUSSI AIMER
+          </h2>
+        </div>
+        <div
+          ref={sliderRef}
+          className="flex gap-4 overflow-x-auto no-scrollbar px-6 md:px-12 snap-x"
+        >
+          {sliderItems.map((item) => (
+            <div key={item.name} className="min-w-[300px] md:min-w-[400px] snap-start cursor-pointer">
+              <div className="aspect-[3/4] bg-neutral-200 mb-4 overflow-hidden">
+                <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
+              </div>
+              <span className="block font-bold text-[12px] uppercase mb-1">{item.name}</span>
+              <span className="text-neutral-500 text-[11px]">{item.sub}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ─── Newsletter Section ─── */}
+      <section className="py-32 px-6 md:px-12 bg-surface text-center flex flex-col items-center">
+        <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-6 max-w-2xl leading-none">
+          REJOIGNEZ LE MONOLITHE
+        </h2>
+        <p className="text-neutral-500 max-w-lg mb-12 text-[13px] leading-relaxed uppercase tracking-wider">
+          Abonnez-vous à notre newsletter pour recevoir des mises à jour exclusives sur nos nouvelles collections et événements.
+        </p>
+        <div className="w-full max-w-md">
+          <div className="flex border-b border-black pb-2 items-center">
+            <input
+              type="email"
+              placeholder="VOTRE ADRESSE E-MAIL"
+              className="flex-1 bg-transparent border-none outline-none text-[11px] font-bold uppercase tracking-widest placeholder:text-neutral-300 focus:ring-0"
+            />
+            <button className="text-[11px] font-black uppercase tracking-widest ml-4 hover:opacity-60">
+              S'INSCRIRE
+            </button>
+          </div>
+        </div>
+      </section>
+    </>
+  )
+}
