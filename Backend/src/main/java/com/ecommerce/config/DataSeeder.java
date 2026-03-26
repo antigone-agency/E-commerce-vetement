@@ -1,14 +1,9 @@
 package com.ecommerce.config;
 
-import com.ecommerce.entity.Permission;
-import com.ecommerce.entity.Role;
-import com.ecommerce.entity.Segment;
-import com.ecommerce.entity.User;
+import com.ecommerce.entity.*;
 import com.ecommerce.enums.AccountStatus;
 import com.ecommerce.enums.PermissionModule;
-import com.ecommerce.repository.RoleRepository;
-import com.ecommerce.repository.SegmentRepository;
-import com.ecommerce.repository.UserRepository;
+import com.ecommerce.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +21,9 @@ public class DataSeeder implements CommandLineRunner {
     private final SegmentRepository segmentRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TvaRateRepository tvaRateRepository;
+    private final TvaConfigRepository tvaConfigRepository;
+    private final ShippingZoneRepository shippingZoneRepository;
 
     @Value("${app.seed.admin-email}")
     private String adminEmail;
@@ -39,6 +37,7 @@ public class DataSeeder implements CommandLineRunner {
         seedRoles();
         seedSegments();
         seedSuperAdmin();
+        seedTvaAndShipping();
     }
 
     private void seedRoles() {
@@ -151,5 +150,48 @@ public class DataSeeder implements CommandLineRunner {
 
         userRepository.save(superAdmin);
         log.info("Super Admin créé: {}", adminEmail);
+    }
+
+    private void seedTvaAndShipping() {
+        // ── TVA Config (singleton) ──
+        if (tvaConfigRepository.count() == 0) {
+            tvaConfigRepository.save(TvaConfig.builder()
+                    .tvaActive(true)
+                    .tauxDefaut(19.0)
+                    .devise("Dinar Tunisien (TND)")
+                    .standardEnabled(true)
+                    .standardSeuil(200.0)
+                    .standardDelai("3 à 5 jours ouvrés")
+                    .expressEnabled(true)
+                    .expressDelai("24h à 48h")
+                    .build());
+            log.info("Configuration TVA par défaut créée (TND).");
+        }
+
+        // ── TVA Rates ──
+        if (tvaRateRepository.count() == 0) {
+            tvaRateRepository.save(TvaRate.builder().nom("TVA Standard (19%)").valeur(19.0).actif(true).build());
+            tvaRateRepository.save(TvaRate.builder().nom("TVA Réduite (7%)").valeur(7.0).actif(true).build());
+            tvaRateRepository.save(TvaRate.builder().nom("TVA Réduite (13%)").valeur(13.0).actif(true).build());
+            tvaRateRepository.save(TvaRate.builder().nom("Exonéré (Export)").valeur(0.0).actif(false).build());
+            log.info("4 taux TVA tunisiens créés.");
+        }
+
+        // ── Shipping Zones ──
+        if (shippingZoneRepository.count() == 0) {
+            shippingZoneRepository.save(ShippingZone.builder()
+                    .nom("Grand Tunis").regions("Tunis, Ariana, Ben Arous, Manouba")
+                    .methode("Livraison directe").estimation("1-2 jours").cout(7.0).statut("Ouverte").build());
+            shippingZoneRepository.save(ShippingZone.builder()
+                    .nom("Nord").regions("Bizerte, Béja, Jendouba, Le Kef, Siliana, Zaghouan, Nabeul")
+                    .methode("Transporteur national").estimation("2-3 jours").cout(9.0).statut("Ouverte").build());
+            shippingZoneRepository.save(ShippingZone.builder()
+                    .nom("Centre").regions("Sousse, Monastir, Mahdia, Sfax, Kairouan, Kasserine, Sidi Bouzid")
+                    .methode("Transporteur national").estimation("2-4 jours").cout(10.0).statut("Ouverte").build());
+            shippingZoneRepository.save(ShippingZone.builder()
+                    .nom("Sud").regions("Gabès, Médenine, Tataouine, Gafsa, Tozeur, Kébili")
+                    .methode("Transporteur national").estimation("3-5 jours").cout(12.0).statut("Ouverte").build());
+            log.info("4 zones de livraison tunisiennes créées.");
+        }
     }
 }

@@ -30,6 +30,10 @@ public class AppearanceRequest {
     private Boolean showIcons;
     private Boolean showLogo;
 
+    // Logo Scale
+    private Integer logoScale;
+    private String logoAlign;
+
     // Avancé
     private Integer borderRadius;
     private Boolean darkMode;

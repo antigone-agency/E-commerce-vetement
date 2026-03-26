@@ -70,6 +70,12 @@ public class AppearanceService {
         if (request.getShowLogo() != null)
             entity.setShowLogo(request.getShowLogo());
 
+        // Logo Scale
+        if (request.getLogoScale() != null)
+            entity.setLogoScale(request.getLogoScale());
+        if (request.getLogoAlign() != null)
+            entity.setLogoAlign(request.getLogoAlign());
+
         // Avancé
         if (request.getBorderRadius() != null)
             entity.setBorderRadius(request.getBorderRadius());
@@ -128,6 +134,8 @@ public class AppearanceService {
                 .sidebarStyle("Étendu")
                 .showIcons(true)
                 .showLogo(true)
+                .logoScale(100)
+                .logoAlign("left")
                 .borderRadius(12)
                 .darkMode(false)
                 .animations(true)
@@ -156,6 +164,8 @@ public class AppearanceService {
                 .sidebarStyle(e.getSidebarStyle())
                 .showIcons(e.isShowIcons())
                 .showLogo(e.isShowLogo())
+                .logoScale(e.getLogoScale() != null ? e.getLogoScale() : 100)
+                .logoAlign(e.getLogoAlign() != null ? e.getLogoAlign() : "left")
                 .borderRadius(e.getBorderRadius())
                 .darkMode(e.isDarkMode())
                 .animations(e.isAnimations())

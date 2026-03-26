@@ -88,14 +88,50 @@ export function applyBorderRadius(px) {
   document.documentElement.style.setProperty('--border-radius', `${px}px`)
 }
 
+/**
+ * Apply logo scale (percentage 50–200, default 100).
+ * Sets --logo-scale CSS custom property read by Sidebar.
+ */
+export function applyLogoScale(percent) {
+  if (percent === undefined || percent === null) return
+  document.documentElement.style.setProperty('--logo-scale', String(percent))
+}
+
+/**
+ * Apply logo alignment: 'left' or 'center'.
+ * Sets --logo-align CSS custom property read by Sidebar.
+ */
+export function applyLogoAlign(align) {
+  if (!align) return
+  document.documentElement.style.setProperty('--logo-align', align)
+}
+
 export function applyDarkMode(enabled) {
   if (enabled === undefined || enabled === null) return
-  document.documentElement.classList.toggle('dark-mode', !!enabled)
+  const root = document.documentElement
+  root.classList.add('dark-transition')
+  root.classList.toggle('dark-mode', !!enabled)
+  setTimeout(() => root.classList.remove('dark-transition'), 450)
 }
 
 /* ═══════════════════════════════════════════════════════════════
    SIDEBAR LAYOUT — driven by CSS custom properties
    ═══════════════════════════════════════════════════════════════ */
+
+/**
+ * Apply logos as CSS custom properties.
+ */
+export function applyLogos(data) {
+  if (!data) return
+  if (data.logoMain) {
+    document.documentElement.style.setProperty('--logo-main', `url(${data.logoMain})`)
+    document.documentElement.setAttribute('data-logo-main', data.logoMain)
+  }
+  if (data.logoLight) {
+    document.documentElement.style.setProperty('--logo-light', `url(${data.logoLight})`)
+    document.documentElement.setAttribute('data-logo-light', data.logoLight)
+  }
+}
 
 /**
  * Apply sidebar layout toggles (showIcons, showLogo).

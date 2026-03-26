@@ -1,225 +1,3 @@
-﻿import { useState, useEffect, useCallback } from 'react'
-import { toast } from 'react-toastify'
-import apiClient from '../api/apiClient'
-import PageHeader from '../components/ui/PageHeader'
-import KpiCard from '../components/ui/KpiCard'
-import CustomSelect from '../components/ui/CustomSelect'
-import Spinner from '../components/ui/Spinner'
-
-const devises = ['Dinar Tunisien (TND)', 'Euro (€)', 'Dollar ($)']
-
-export default function TvaLivraison() {
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-
-  /* ── Config state ── */
-  const [tvaActive, setTvaActive] = useState(true)
-  const [tauxDefaut, setTauxDefaut] = useState('19')
-  const [devise, setDevise] = useState('Dinar Tunisien (TND)')
-
-  /* ── TVA rates ── */
-  const [taux, setTaux] = useState([])
-
-  /* ── Modal ajout taux ── */
-  const [showAddTaux, setShowAddTaux] = useState(false)
-  const [newTauxNom, setNewTauxNom] = useState('')
-  const [newTauxValeur, setNewTauxValeur] = useState('')
-
-  /* ── Modal édition taux ── */
-  const [editTaux, setEditTaux] = useState(null)
-  const [editTauxNom, setEditTauxNom] = useState('')
-  const [editTauxValeur, setEditTauxValeur] = useState('')
-
-  /* ── Zones state ── */
-  const [zones, setZones] = useState([])
-
-  /* ── Modal ajout zone ── */
-  const [showAddZone, setShowAddZone] = useState(false)
-  const [newZone, setNewZone] = useState({ nom: '', regions: '', methode: '', estimation: '', cout: '' })
-
-  /* ── Modal édition zone ── */
-  const [editZone, setEditZone] = useState(null)
-  const [editZoneData, setEditZoneData] = useState({ nom: '', regions: '', methode: '', estimation: '', cout: '', statut: '' })
-
-  /* ── Modes d'expédition ── */
-  const [standardEnabled, setStandardEnabled] = useState(true)
-  const [standardSeuil, setStandardSeuil] = useState('200')
-  const [standardDelai, setStandardDelai] = useState('3 à 5 jours ouvrés')
-  const [expressEnabled, setExpressEnabled] = useState(true)
-  const [expressSeuil, setExpressSeuil] = useState('')
-  const [expressDelai, setExpressDelai] = useState('24h à 48h')
-
-  // ── Currency symbol helper ──
-  const currencySymbol = devise.includes('TND') ? 'TND' : devise.includes('€') ? '€' : '$'
-
-  // ── Load all data ──
-  const fetchAll = useCallback(async () => {
-    setLoading(true)
-    try {
-      const [configRes, ratesRes, zonesRes] = await Promise.all([
-        apiClient.get('/admin/tva-shipping/config'),
-        apiClient.get('/admin/tva-shipping/rates'),
-        apiClient.get('/admin/tva-shipping/zones'),
-      ])
-      const c = configRes.data
-      setTvaActive(c.tvaActive)
-      setTauxDefaut(String(c.tauxDefaut))
-      setDevise(c.devise || 'Dinar Tunisien (TND)')
-      setStandardEnabled(c.standardEnabled)
-      setStandardSeuil(c.standardSeuil != null ? String(c.standardSeuil) : '')
-      setStandardDelai(c.standardDelai || '')
-      setExpressEnabled(c.expressEnabled)
-      setExpressSeuil(c.expressSeuil != null ? String(c.expressSeuil) : '')
-      setExpressDelai(c.expressDelai || '')
-      setTaux(ratesRes.data)
-      setZones(zonesRes.data)
-    } catch {
-      toast.error('Erreur lors du chargement des données TVA & Livraison.')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => { fetchAll() }, [fetchAll])
-
-  /* ═══════════ Config save ═══════════ */
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      await apiClient.put('/admin/tva-shipping/config', {
-        tvaActive,
-        tauxDefaut: parseFloat(tauxDefaut) || 0,
-        devise,
-        standardEnabled,
-        standardSeuil: standardSeuil ? parseFloat(standardSeuil) : null,
-        standardDelai,
-        expressEnabled,
-        expressSeuil: expressSeuil ? parseFloat(expressSeuil) : null,
-        expressDelai,
-      })
-      toast.success('Configuration enregistrée avec succès.')
-    } catch {
-      toast.error('Erreur lors de la sauvegarde.')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  /* ═══════════ TVA Rates handlers ═══════════ */
-  const handleAddTaux = async () => {
-    if (!newTauxNom.trim() || !newTauxValeur) return toast.error('Veuillez remplir tous les champs.')
-    try {
-      const res = await apiClient.post('/admin/tva-shipping/rates', {
-        nom: newTauxNom.trim(),
-        valeur: parseFloat(newTauxValeur),
-      })
-      setTaux(prev => [...prev, res.data])
-      setNewTauxNom('')
-      setNewTauxValeur('')
-      setShowAddTaux(false)
-      toast.success('Taux TVA ajouté avec succès.')
-    } catch {
-      toast.error("Erreur lors de l'ajout du taux.")
-    }
-  }
-
-  const handleEditTaux = async () => {
-    if (!editTauxNom.trim() || !editTauxValeur) return toast.error('Veuillez remplir tous les champs.')
-    try {
-      const res = await apiClient.put(`/admin/tva-shipping/rates/${editTaux.id}`, {
-        nom: editTauxNom.trim(),
-        valeur: parseFloat(editTauxValeur),
-      })
-      setTaux(prev => prev.map(t => t.id === editTaux.id ? res.data : t))
-      setEditTaux(null)
-      toast.success('Taux TVA modifié avec succès.')
-    } catch {
-      toast.error('Erreur lors de la modification.')
-    }
-  }
-
-  const openEditTaux = (t) => {
-    setEditTaux(t)
-    setEditTauxNom(t.nom)
-    setEditTauxValeur(String(t.valeur))
-  }
-
-  const toggleTauxStatut = async (id) => {
-    try {
-      const res = await apiClient.patch(`/admin/tva-shipping/rates/${id}/toggle`)
-      setTaux(prev => prev.map(t => t.id === id ? res.data : t))
-    } catch {
-      toast.error('Erreur lors du changement de statut.')
-    }
-  }
-
-  const deleteTaux = async (id) => {
-    try {
-      await apiClient.delete(`/admin/tva-shipping/rates/${id}`)
-      setTaux(prev => prev.filter(t => t.id !== id))
-      toast.success('Taux TVA supprimé.')
-    } catch {
-      toast.error('Erreur lors de la suppression.')
-    }
-  }
-
-  /* ═══════════ Zones handlers ═══════════ */
-  const handleAddZone = async () => {
-    if (!newZone.nom.trim() || !newZone.regions.trim()) return toast.error('Veuillez remplir les champs requis.')
-    try {
-      const res = await apiClient.post('/admin/tva-shipping/zones', {
-        ...newZone,
-        cout: parseFloat(newZone.cout) || 0,
-      })
-      setZones(prev => [...prev, res.data])
-      setNewZone({ nom: '', regions: '', methode: '', estimation: '', cout: '' })
-      setShowAddZone(false)
-      toast.success('Zone de livraison ajoutée.')
-    } catch {
-      toast.error("Erreur lors de l'ajout de la zone.")
-    }
-  }
-
-  const openEditZone = (z) => {
-    setEditZone(z)
-    setEditZoneData({ nom: z.nom, regions: z.regions, methode: z.methode || '', estimation: z.estimation || '', cout: String(z.cout), statut: z.statut })
-  }
-
-  const handleEditZone = async () => {
-    if (!editZoneData.nom.trim() || !editZoneData.regions.trim()) return toast.error('Veuillez remplir les champs requis.')
-    try {
-      const res = await apiClient.put(`/admin/tva-shipping/zones/${editZone.id}`, {
-        ...editZoneData,
-        cout: parseFloat(editZoneData.cout) || 0,
-      })
-      setZones(prev => prev.map(z => z.id === editZone.id ? res.data : z))
-      setEditZone(null)
-      toast.success('Zone modifiée avec succès.')
-    } catch {
-      toast.error('Erreur lors de la modification.')
-    }
-  }
-
-  const deleteZone = async (id) => {
-    try {
-      await apiClient.delete(`/admin/tva-shipping/zones/${id}`)
-      setZones(prev => prev.filter(z => z.id !== id))
-      toast.success('Zone supprimée.')
-    } catch {
-      toast.error('Erreur lors de la suppression.')
-    }
-  }
-
-  /* ═══════════ Derived values ═══════════ */
-  const tauxActifs = taux.filter(t => t.actif).length
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Spinner />
-      </div>
-    )
-  }
 
   /* ══════════════════════ RENDER ══════════════════════ */
   return (
@@ -258,7 +36,7 @@ export default function TvaLivraison() {
             </div>
             <button
               onClick={() => setShowAddTaux(true)}
-              className="bg-btn text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-btn-dark transition-all"
+              className="bg-brand text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-brand-dark transition-all"
             >
               <span className="material-symbols-outlined text-sm">add</span> Ajouter un taux
             </button>
@@ -328,7 +106,7 @@ export default function TvaLivraison() {
             <h3 className="text-lg font-bold text-slate-800">Zones de Livraison</h3>
             <p className="text-sm text-slate-500">Configurez vos périmètres d'expédition et leurs tarifs spécifiques.</p>
           </div>
-          <button onClick={() => setShowAddZone(true)} className="bg-btn text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-btn-dark transition-all">
+          <button onClick={() => setShowAddZone(true)} className="bg-brand text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-brand-dark transition-all">
             <span className="material-symbols-outlined text-sm">add_location</span> Ajouter une zone
           </button>
         </div>
@@ -443,7 +221,7 @@ export default function TvaLivraison() {
         </div>
 
         <div className="p-6 bg-slate-50 rounded-b-xl flex justify-end border-t border-slate-100">
-          <button onClick={handleSave} disabled={saving} className="bg-btn text-white px-8 py-2.5 rounded-lg text-sm font-bold hover:bg-btn-dark transition-all shadow-md disabled:opacity-50">
+          <button onClick={handleSave} disabled={saving} className="bg-brand text-white px-8 py-2.5 rounded-lg text-sm font-bold hover:bg-brand-dark transition-all shadow-md disabled:opacity-50">
             {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
           </button>
         </div>
@@ -565,11 +343,7 @@ export default function TvaLivraison() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-600">Statut</label>
-                  <select value={editZoneData.statut} onChange={e => setEditZoneData({ ...editZoneData, statut: e.target.value })} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:ring-brand focus:border-brand outline-none">
-                    <option value="Ouverte">Ouverte</option>
-                    <option value="Maintenance">Maintenance</option>
-                    <option value="Fermée">Fermée</option>
-                  </select>
+                  <CustomSelect value={editZoneData.statut} onChange={v => setEditZoneData({ ...editZoneData, statut: v })} options={['Ouverte', 'Fermée', 'Maintenance']} />
                 </div>
               </div>
             </div>

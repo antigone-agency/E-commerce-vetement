@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'react-toastify'
 import { appearanceApi } from '../api/appearanceApi'
-import { applyAllColors, applyColor, applyAllFonts, applyFont, applySidebarLayout, applyBorderRadius, applyDarkMode } from '../utils/brandColor'
+import { applyAllColors, applyColor, applyAllFonts, applyFont, applySidebarLayout, applyBorderRadius, applyDarkMode, applyLogos, applyLogoScale, applyLogoAlign } from '../utils/brandColor'
 import CustomSelect from '../components/ui/CustomSelect'
 
 /* ── Tiny helpers ─────────────────────────────────────────── */
@@ -53,14 +53,34 @@ function SectionCard({ icon, title, children }) {
 }
 
 function ColorPicker({ label, sub, value, onChange }) {
+  const [hexInput, setHexInput] = useState(value)
+  useEffect(() => { setHexInput(value) }, [value])
+
+  const handleHexChange = (e) => {
+    const raw = e.target.value
+    setHexInput(raw)
+    if (/^#[0-9A-Fa-f]{6}$/.test(raw)) onChange(raw)
+  }
+
+  const handleHexBlur = () => {
+    if (!/^#[0-9A-Fa-f]{6}$/.test(hexInput)) setHexInput(value)
+  }
+
   return (
     <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
       <div>
         <p className="text-sm font-bold text-slate-800">{label}</p>
         <p className="text-[11px] text-slate-500">{sub}</p>
       </div>
-      <div className="flex items-center gap-3">
-        <span className="text-xs font-mono font-bold text-slate-400">{value}</span>
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={hexInput}
+          onChange={handleHexChange}
+          onBlur={handleHexBlur}
+          maxLength={7}
+          className="w-[5.5rem] px-2 py-1 text-xs font-mono font-bold text-slate-600 bg-white border border-slate-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+        />
         <label className="relative cursor-pointer">
           <div className="w-8 h-8 rounded-md border border-slate-200" style={{ backgroundColor: value }} />
           <input
@@ -76,9 +96,14 @@ function ColorPicker({ label, sub, value, onChange }) {
 }
 
 function LogoUpload({ icon, label, sub, value, onChange }) {
-  const handleFile = (e) => {
-    const file = e.target.files?.[0]
+  const [dragging, setDragging] = useState(false)
+
+  const processFile = (file) => {
     if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast.error('Seuls les fichiers image sont acceptés')
+      return
+    }
     if (file.size > 2 * 1024 * 1024) {
       toast.error('Fichier trop volumineux (max 2MB)')
       return
@@ -88,19 +113,70 @@ function LogoUpload({ icon, label, sub, value, onChange }) {
     reader.readAsDataURL(file)
   }
 
+  const handleFile = (e) => processFile(e.target.files?.[0])
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setDragging(false)
+    processFile(e.dataTransfer.files?.[0])
+  }
+
+  const handleDragOver = (e) => { e.preventDefault(); setDragging(true) }
+  const handleDragLeave = () => setDragging(false)
+
   return (
-    <label className="border-2 border-dashed border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-slate-50 transition-colors cursor-pointer group relative overflow-hidden">
+    <div
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center transition-all relative overflow-hidden group ${
+        dragging
+          ? 'border-brand bg-brand/5 scale-[1.02]'
+          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+      }`}
+    >
       {value ? (
-        <img src={value} alt={label} className="w-10 h-10 object-contain mb-2" />
+        <>
+          <div className="w-full flex items-center justify-center bg-slate-50 rounded-lg p-3 mb-3" style={{ minHeight: '60px' }}>
+            <img src={value} alt={label} className="h-[36px] w-auto max-w-full object-contain" />
+          </div>
+          <p className="text-[10px] font-bold uppercase text-slate-500 mb-1">{label}</p>
+          <p className="text-[9px] text-slate-400 mb-3">Dimensions recommandées : <strong>200 × 40 px</strong></p>
+          <div className="flex gap-2">
+            <label className="px-3 py-1.5 text-[10px] font-bold text-white bg-btn rounded-lg cursor-pointer hover:bg-btn-dark transition-colors">
+              Changer
+              <input type="file" accept="image/*" onChange={handleFile} className="hidden" />
+            </label>
+            <button
+              type="button"
+              onClick={() => onChange('')}
+              className="px-3 py-1.5 text-[10px] font-bold text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+            >
+              Supprimer
+            </button>
+          </div>
+        </>
       ) : (
-        <span className="material-symbols-outlined text-slate-300 text-3xl mb-3 group-hover:text-brand transition-colors">
-          {icon}
-        </span>
+        <label className="flex flex-col items-center cursor-pointer w-full">
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 transition-colors ${
+            dragging ? 'bg-brand/10' : 'bg-slate-100 group-hover:bg-brand/10'
+          }`}>
+            <span className={`material-symbols-outlined text-2xl transition-colors ${
+              dragging ? 'text-brand' : 'text-slate-300 group-hover:text-brand'
+            }`}>
+              {dragging ? 'download' : icon}
+            </span>
+          </div>
+          <p className="text-[10px] font-bold uppercase text-slate-500">{label}</p>
+          <p className="text-[9px] text-slate-400 mt-1">{sub}</p>
+          <p className="text-[9px] text-slate-400 mt-0.5">Recommandé : <strong>200 × 40 px</strong></p>
+          <p className="text-[9px] text-brand font-semibold mt-2">
+            {dragging ? 'Déposez ici !' : 'Glissez-déposez ou cliquez'}
+          </p>
+          <input type="file" accept="image/*" onChange={handleFile} className="hidden" />
+        </label>
       )}
-      <p className="text-[10px] font-bold uppercase text-slate-500">{label}</p>
-      <p className="text-[9px] text-slate-400 mt-1">{sub}</p>
-      <input type="file" accept="image/*" onChange={handleFile} className="hidden" />
-    </label>
+    </div>
   )
 }
 
@@ -147,6 +223,8 @@ const DEFAULTS = {
   whatsapp: '',
   logoMain: '',
   logoLight: '',
+  logoScale: 100,
+  logoAlign: 'left',
   favicon: '',
   loader: '',
 }
@@ -185,6 +263,9 @@ export default function Apparence() {
       applySidebarLayout(merged)
       applyBorderRadius(merged.borderRadius)
       applyDarkMode(merged.darkMode)
+      applyLogos(merged)
+      applyLogoScale(merged.logoScale)
+      applyLogoAlign(merged.logoAlign)
     } catch {
       toast.error('Erreur lors du chargement des paramètres')
     } finally {
@@ -207,6 +288,9 @@ export default function Apparence() {
         applySidebarLayout(d)
         applyBorderRadius(d.borderRadius)
         applyDarkMode(d.darkMode)
+        applyLogos(d)
+        applyLogoScale(d.logoScale)
+        applyLogoAlign(d.logoAlign)
       }
       toast.success(`Apparence ${activeScope === 'backoffice' ? 'Back Office' : 'Front Office'} enregistrée`)
     } catch {
@@ -228,6 +312,9 @@ export default function Apparence() {
         applySidebarLayout(resetData)
         applyBorderRadius(resetData.borderRadius)
         applyDarkMode(resetData.darkMode)
+        applyLogos(resetData)
+        applyLogoScale(resetData.logoScale)
+        applyLogoAlign(resetData.logoAlign)
       } else {
         setFoSettings({ ...DEFAULTS, fontPrimary: 'Poppins', ...stripNulls(res) })
       }
@@ -242,7 +329,9 @@ export default function Apparence() {
   const FONT_FIELD_MAP = { fontPrimary: 'heading', fontSecondary: 'body', fontSidebar: 'sidebar', fontButton: 'button', fontBadge: 'badge' }
   const LAYOUT_FIELDS = new Set(['showIcons', 'showLogo'])
   const set = (field) => (valOrEvent) => {
-    const value = valOrEvent?.target ? valOrEvent.target.value : valOrEvent
+    let value = valOrEvent?.target ? valOrEvent.target.value : valOrEvent
+    // Ensure numeric fields stay as numbers
+    if (field === 'borderRadius' || field === 'logoScale') value = Number(value)
     setCurrent(prev => ({ ...prev, [field]: value }))
     // Live preview: apply color instantly when picking any color field
     if (activeScope === 'backoffice' && COLOR_FIELD_MAP[field]) {
@@ -259,6 +348,14 @@ export default function Apparence() {
     // Live preview: border radius
     if (activeScope === 'backoffice' && field === 'borderRadius') {
       applyBorderRadius(value)
+    }
+    // Live preview: logo scale
+    if (activeScope === 'backoffice' && field === 'logoScale') {
+      applyLogoScale(value)
+    }
+    // Live preview: logo alignment
+    if (activeScope === 'backoffice' && field === 'logoAlign') {
+      applyLogoAlign(value)
     }
   }
 
@@ -498,12 +595,10 @@ export default function Apparence() {
 
               {/* ── Logos ──────────────────────────── */}
               <SectionCard icon="image" title="Logos &amp; Iconographie">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
                     { field: 'logoMain', icon: 'cloud_upload',    label: 'Logo Principal', sub: 'SVG, PNG (max 2MB)' },
-                    { field: 'logoLight', icon: 'brightness_high', label: 'Logo Clair',    sub: 'Pour fond sombre' },
-                    { field: 'favicon', icon: 'bookmark',         label: 'Favicon',       sub: '32x32px .ico' },
-                    { field: 'loader', icon: 'rotate_right',      label: 'Loader',        sub: 'GIF ou SVG animé' },
+                    { field: 'logoLight', icon: 'brightness_high', label: 'Logo Mode Sombre', sub: 'Version claire pour fond sombre' },
                   ].map((item) => (
                     <LogoUpload
                       key={item.field}
@@ -515,6 +610,81 @@ export default function Apparence() {
                     />
                   ))}
                 </div>
+
+                {/* ── Logo Scale Slider ──────────────────── */}
+                {current.logoMain && (
+                  <div className="mt-6 pt-6 border-t border-slate-100">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-brand text-lg">aspect_ratio</span>
+                        <span className="text-sm font-bold text-slate-700">Taille du logo dans la sidebar</span>
+                      </div>
+                      <span className="text-xs font-bold text-brand bg-brand/10 px-2.5 py-1 rounded-full">
+                        {current.logoScale || 100}%
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="material-symbols-outlined text-slate-400 text-base">photo_size_select_small</span>
+                      <input
+                        type="range"
+                        min="50"
+                        max="200"
+                        step="5"
+                        value={current.logoScale || 100}
+                        onChange={set('logoScale')}
+                        className="flex-1 h-2 bg-slate-200 rounded-full appearance-none cursor-pointer accent-brand"
+                        style={{ accentColor: 'rgb(var(--color-brand))' }}
+                      />
+                      <span className="material-symbols-outlined text-slate-400 text-base">photo_size_select_large</span>
+                    </div>
+                    <div className="flex justify-between text-[9px] text-slate-400 mt-1 px-8">
+                      <span>50%</span>
+                      <span>100%</span>
+                      <span>150%</span>
+                      <span>200%</span>
+                    </div>
+                    {/* Live preview of logo at current scale */}
+                    <div className="mt-4 bg-slate-50 rounded-xl p-4 flex items-center justify-center border border-slate-100">
+                      <img
+                        src={current.logoMain}
+                        alt="Aperçu taille logo"
+                        className="object-contain transition-all duration-200"
+                        style={{ height: `${36 * (current.logoScale || 100) / 100}px`, maxWidth: '100%' }}
+                      />
+                    </div>
+                    <p className="text-[9px] text-slate-400 text-center mt-2">
+                      Aperçu — hauteur : {Math.round(36 * (current.logoScale || 100) / 100)}px
+                    </p>
+
+                    {/* ── Logo Alignment ──────────────────── */}
+                    <div className="mt-6 pt-6 border-t border-slate-100">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="material-symbols-outlined text-brand text-lg">align_horizontal_left</span>
+                        <span className="text-sm font-bold text-slate-700">Alignement du logo</span>
+                      </div>
+                      <div className="flex gap-3">
+                        {[
+                          { value: 'left', icon: 'format_align_left', label: 'À gauche' },
+                          { value: 'center', icon: 'format_align_center', label: 'Centré' },
+                        ].map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => set('logoAlign')(opt.value)}
+                            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-bold transition-all ${
+                              (current.logoAlign || 'left') === opt.value
+                                ? 'border-brand bg-brand/5 text-brand'
+                                : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'
+                            }`}
+                          >
+                            <span className="material-symbols-outlined text-lg">{opt.icon}</span>
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </SectionCard>
 
               {/* ── Identité de la Marque (FRONTOFFICE ONLY) ── */}

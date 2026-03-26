@@ -37,13 +37,32 @@ function Sidebar() {
 
   const [showIcons, setShowIcons] = useState(() => readToggle('--sidebar-show-icons'))
   const [showLogo, setShowLogo]   = useState(() => readToggle('--sidebar-show-logo'))
+  const [logoMain, setLogoMain]   = useState(() => document.documentElement.getAttribute('data-logo-main') || '')
+  const [logoLight, setLogoLight] = useState(() => document.documentElement.getAttribute('data-logo-light') || '')
+  const [isDark, setIsDark]       = useState(() => document.documentElement.classList.contains('dark-mode'))
+  const [logoScale, setLogoScale] = useState(() => {
+    const v = getComputedStyle(document.documentElement).getPropertyValue('--logo-scale').trim()
+    return v ? parseInt(v, 10) : 100
+  })
+  const [logoAlign, setLogoAlign] = useState(() => {
+    return getComputedStyle(document.documentElement).getPropertyValue('--logo-align').trim() || 'left'
+  })
+
+  // Pick the right logo: use light variant in dark mode if available, else main
+  const logoSrc = (isDark && logoLight) ? logoLight : logoMain
 
   useEffect(() => {
     const observer = new MutationObserver(() => {
       setShowIcons(readToggle('--sidebar-show-icons'))
       setShowLogo(readToggle('--sidebar-show-logo'))
+      setLogoMain(document.documentElement.getAttribute('data-logo-main') || '')
+      setLogoLight(document.documentElement.getAttribute('data-logo-light') || '')
+      setIsDark(document.documentElement.classList.contains('dark-mode'))
+      const v = getComputedStyle(document.documentElement).getPropertyValue('--logo-scale').trim()
+      setLogoScale(v ? parseInt(v, 10) : 100)
+      setLogoAlign(getComputedStyle(document.documentElement).getPropertyValue('--logo-align').trim() || 'left')
     })
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] })
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class', 'data-logo-main', 'data-logo-light'] })
     return () => observer.disconnect()
   }, [readToggle])
 
@@ -58,13 +77,24 @@ function Sidebar() {
     <aside className="w-64 bg-white border-r border-slate-200 hidden lg:flex flex-col sticky top-0 h-screen font-sidebar">
       {/* Logo */}
       {showLogo && (
-      <div className="p-6 flex items-center gap-3">
-        <div className="w-10 h-10 bg-sidebar rounded-custom flex items-center justify-center shadow-sm">
-          <span className="material-symbols-outlined text-white text-[20px]">shield</span>
-        </div>
-        <span className="text-xl font-bold tracking-tight text-slate-800">
-          WORKWEAR<span className="text-sidebar">PRO</span>
-        </span>
+      <div className={`px-5 py-4 flex items-center ${logoAlign === 'center' ? 'justify-center' : ''}`}>
+        {logoSrc ? (
+          <img
+            src={logoSrc}
+            alt="Logo"
+            className="w-auto object-contain transition-all duration-200"
+            style={{ height: `${36 * logoScale / 100}px`, maxWidth: '200px' }}
+          />
+        ) : (
+          <>
+            <div className="w-9 h-9 bg-sidebar rounded-custom flex items-center justify-center shadow-sm flex-shrink-0">
+              <span className="material-symbols-outlined text-white text-[18px]">shield</span>
+            </div>
+            <span className="ml-3 text-lg font-bold tracking-tight text-slate-800">
+              WORKWEAR<span className="text-sidebar">PRO</span>
+            </span>
+          </>
+        )}
       </div>
       )}
 

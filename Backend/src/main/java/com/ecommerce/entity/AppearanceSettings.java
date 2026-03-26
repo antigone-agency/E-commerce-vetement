@@ -54,7 +54,14 @@ public class AppearanceSettings {
     private boolean showIcons = true;
     @Builder.Default
     private boolean showLogo = true;
+    // ── Logo Scale (percentage 50–200, default 100) ──────────────
+    @Builder.Default
+    @Column(columnDefinition = "integer default 100")
+    private Integer logoScale = 100;
 
+    // ── Logo Alignment: "left" or "center" ────────────────────────
+    @Builder.Default
+    private String logoAlign = "left";
     // ── Avancé ───────────────────────────────────────────────────────
     @Builder.Default
     private int borderRadius = 12;

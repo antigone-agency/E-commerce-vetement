@@ -37,6 +37,10 @@ public class AppearanceResponse {
     private boolean showIcons;
     private boolean showLogo;
 
+    // Logo Scale
+    private int logoScale;
+    private String logoAlign;
+
     // Avancé
     private int borderRadius;
     private boolean darkMode;

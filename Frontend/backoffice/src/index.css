@@ -175,8 +175,16 @@ input[type="checkbox"], input[type="radio"], input[type="range"] {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   DARK MODE
+   DARK MODE — smooth transition
    ═══════════════════════════════════════════════════════════════ */
+html.dark-transition,
+html.dark-transition *,
+html.dark-transition *::before,
+html.dark-transition *::after {
+  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease,
+              box-shadow 0.4s ease, fill 0.4s ease, stroke 0.4s ease !important;
+}
+
 .dark-mode {
   color-scheme: dark;
 }
