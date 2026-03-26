@@ -188,7 +188,8 @@ input[type="checkbox"], input[type="radio"], input[type="range"] {
 }
 
 /* White cards / sections → dark surface */
-.dark-mode .bg-white {
+.dark-mode .bg-white,
+.dark-mode [class*="bg-white\/"] {
   background-color: #1e293b !important;
   color: #e2e8f0 !important;
 }
