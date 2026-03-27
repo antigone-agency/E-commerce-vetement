@@ -267,10 +267,10 @@ export default function DetailCommande() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right text-sm font-medium text-slate-600">
-                        {p.prix.toFixed(2)} €
+                        {p.prix.toFixed(2)} DT
                       </td>
                       <td className="px-6 py-4 text-right text-sm font-bold text-brand">
-                        {(p.prix * p.qte).toFixed(2)} €
+                        {(p.prix * p.qte).toFixed(2)} DT
                       </td>
                     </tr>
                   ))}
@@ -288,25 +288,25 @@ export default function DetailCommande() {
             <div className="p-6 space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-slate-500">Sous-total produits</span>
-                <span className="font-medium text-slate-700">{order.sousTotal.toFixed(2)} €</span>
+                <span className="font-medium text-slate-700">{order.sousTotal.toFixed(2)} DT</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-slate-500">Frais de livraison</span>
-                <span className="font-medium text-slate-700">{order.fraisLivraison.toFixed(2)} €</span>
+                <span className="font-medium text-slate-700">{order.fraisLivraison.toFixed(2)} DT</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-slate-500">TVA (20%)</span>
-                <span className="font-medium text-slate-700">{order.tva.toFixed(2)} €</span>
+                <span className="font-medium text-slate-700">{order.tva.toFixed(2)} DT</span>
               </div>
               {order.remise > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-brand">Remise</span>
-                  <span className="font-medium text-brand">-{order.remise.toFixed(2)} €</span>
+                  <span className="font-medium text-brand">-{order.remise.toFixed(2)} DT</span>
                 </div>
               )}
               <div className="pt-4 border-t border-dashed border-slate-200 flex justify-between items-center">
                 <span className="font-black text-xs text-slate-500 uppercase tracking-widest">Total final</span>
-                <span className="text-2xl font-black text-brand">{order.total.toFixed(2)} €</span>
+                <span className="text-2xl font-black text-brand">{order.total.toFixed(2)} DT</span>
               </div>
             </div>
           </div>

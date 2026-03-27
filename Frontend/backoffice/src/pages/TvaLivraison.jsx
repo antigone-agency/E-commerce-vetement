@@ -6,7 +6,7 @@ import KpiCard from '../components/ui/KpiCard'
 import CustomSelect from '../components/ui/CustomSelect'
 import Spinner from '../components/ui/Spinner'
 
-const devises = ['Dinar Tunisien (TND)', 'Euro (€)', 'Dollar ($)']
+const devises = ['Dinar Tunisien (DT)']
 
 export default function TvaLivraison() {
   const [loading, setLoading] = useState(true)
@@ -15,7 +15,7 @@ export default function TvaLivraison() {
   /* ── Config state ── */
   const [tvaActive, setTvaActive] = useState(true)
   const [tauxDefaut, setTauxDefaut] = useState('19')
-  const [devise, setDevise] = useState('Dinar Tunisien (TND)')
+  const [devise, setDevise] = useState('Dinar Tunisien (DT)')
 
   /* ── TVA rates ── */
   const [taux, setTaux] = useState([])
@@ -50,7 +50,7 @@ export default function TvaLivraison() {
   const [expressDelai, setExpressDelai] = useState('24h à 48h')
 
   // ── Currency symbol helper ──
-  const currencySymbol = devise.includes('TND') ? 'TND' : devise.includes('€') ? '€' : '$'
+  const currencySymbol = 'DT'
 
   // ── Load all data ──
   const fetchAll = useCallback(async () => {

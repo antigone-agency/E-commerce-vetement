@@ -5,7 +5,7 @@ import { useParams, Link } from 'react-router-dom'
 const allProducts = [
   {
     id: 1, slug: 'robe-soie-minimaliste',
-    name: 'Robe Longue en Soie', collection: 'Nouvelle Collection', price: '280€',
+    name: 'Robe Longue en Soie', collection: 'Nouvelle Collection', price: '280 DT',
     colorName: 'Noir Profond',
     colors: ['#000000', '#d6cec4', '#9e9e9e'],
     sizes: ['XS', 'S', 'M', 'L', 'XL'],
@@ -21,7 +21,7 @@ const allProducts = [
   },
   {
     id: 2, slug: 'chemise-oversize-coton',
-    name: 'Chemise Oversize Coton', collection: 'Essentiels', price: '145€',
+    name: 'Chemise Oversize Coton', collection: 'Essentiels', price: '145 DT',
     colorName: 'Blanc',
     colors: ['#ffffff', '#e2e2e2'],
     sizes: ['XS', 'S', 'M', 'L', 'XL'],
@@ -35,7 +35,7 @@ const allProducts = [
   },
   {
     id: 3, slug: 'trench-gabardine-structure',
-    name: 'Trench Gabardine Structuré', collection: 'Nouvelle Collection', price: '420€',
+    name: 'Trench Gabardine Structuré', collection: 'Nouvelle Collection', price: '420 DT',
     colorName: 'Gris Pierre',
     colors: ['#adabaa', '#474747'],
     sizes: ['XS', 'S', 'M', 'L', 'XL'],
@@ -49,7 +49,7 @@ const allProducts = [
   },
   {
     id: 4, slug: 'pantalon-large-laine',
-    name: 'Pantalon Large Laine', collection: 'Essentiels', price: '190€',
+    name: 'Pantalon Large Laine', collection: 'Essentiels', price: '190 DT',
     colorName: 'Anthracite',
     colors: ['#474747', '#000000'],
     sizes: ['XS', 'S', 'M', 'L', 'XL'],
@@ -63,7 +63,7 @@ const allProducts = [
   },
   {
     id: 5, slug: 'top-fluide-imprime',
-    name: 'Top Fluide Imprimé', collection: 'Printemps-Été', price: '85€',
+    name: 'Top Fluide Imprimé', collection: 'Printemps-Été', price: '85 DT',
     colorName: 'Écru',
     colors: ['#e2e2e2'],
     sizes: ['XS', 'S', 'M', 'L'],
@@ -77,7 +77,7 @@ const allProducts = [
   },
   {
     id: 6, slug: 'veste-croisee-charcoal',
-    name: 'Veste Croisée Charcoal', collection: 'Essentiels', price: '350€',
+    name: 'Veste Croisée Charcoal', collection: 'Essentiels', price: '350 DT',
     colorName: 'Charcoal',
     colors: ['#3b3b3c'],
     sizes: ['XS', 'S', 'M', 'L', 'XL'],
@@ -91,7 +91,7 @@ const allProducts = [
   },
   {
     id: 7, slug: 'sac-cabas-cuir-graine',
-    name: 'Sac Cabas Cuir Grainé', collection: 'Accessoires', price: '550€',
+    name: 'Sac Cabas Cuir Grainé', collection: 'Accessoires', price: '550 DT',
     colorName: 'Noir',
     colors: ['#000000'],
     sizes: ['UNIQUE'],
@@ -105,7 +105,7 @@ const allProducts = [
   },
   {
     id: 8, slug: 'pull-cachemire-epais',
-    name: 'Pull Cachemire Épais', collection: 'Essentiels', price: '295€',
+    name: 'Pull Cachemire Épais', collection: 'Essentiels', price: '295 DT',
     colorName: 'Perle',
     colors: ['#e2e2e2', '#adabaa'],
     sizes: ['XS', 'S', 'M', 'L', 'XL'],
@@ -120,10 +120,10 @@ const allProducts = [
 ]
 
 const similarProducts = [
-  { name: 'Blazer Structuré', price: '189€', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCcPTIe4KpvarIxt541R0Om-eb_9dMd63YtAaFATTIymfU7m026h2PKN4HQYdxuH7e1EKYEvpAd-i3tctnsWUzw88vQbeVJEHRYG01Z1mmm_Gt6SNSEueXdxVpxVC_88hxQHC3sfHZAu4DYRXB_wi5-4snPVt79I7BDU_esq4UfyS78XoqwOy6z_EMiO4-SYpFRgWtONFEOpbGQbGX57xDnul0AZ7kZy71QN712q2_aJMQ0ghaZInP5hlqASaDocq4wQ8yPZEH27zNg' },
-  { name: 'Pantalon Large en Laine', price: '95€', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCrkINWGSPeBdQgSF9KZ82vd3891E4467EiXKjBKlOykKNTNrYJfEEeqZ9vCemAAxyFocVikXNeIKi2KY-8w9_NIBd5afEo8Rldq0Lv1PZjcR8cRdUY0dBI1uX9MssfSqXNSwTNG0xGs4726FP8uTwP69F068gyKeZKgk99BQspI3HcALJINBq5wgJ9fMe_0G54GtCdY-vCCYzc76uQCWfMIKZELFx6XZCOqZ4ToOQiZVMmOKJck-_MEdaY4zyxCCYiPiJ9irr91j39' },
-  { name: 'Top en Maille Fine', price: '59€', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBKU1mroyKUsGn5c4ReIE1JGodFlFXL2Sovt2OFe5z622gHhqo3VQm4OdDZnR__frw-Lp8_FDTN2d0YR2JKP-e1Qm-RYNJLOfAZvcNMB3EXuuz6SqCYkrIgD0skbfvJLI48zF-nmxTXEA1FSXZPykPyp0RQw0vTxauj8gw53qs1LmGBFRIlAijJXH0Qn1V_lZbShkxZl1zulYWw1JA3cXCzDkqKXr-M7F4b7o-8fLFsYAAmwzCmAIrjLyI-KNTBsXVZ5K6yVc7V-COA' },
-  { name: 'Manteau en Cachemire', price: '450€', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuALOc-p7AGF5fuEYdOTzWuwDyHZTUvkx1UWZQlKurRFJBDwH9Bjct6wkHC2RMFRHMWH8HuflXBV3xcB9vFn9ay4Oe9BFG4N_3K3u4q79bsXg6aDEgQw1qMIfk11fDlD9cprgOBhvxr-xJN5_pYL-ZdrEIm1yXFdnhl3PdQr60qm7NSmTpGLjYsQ0-rHRxsAgnutsY_ce9KOgxCgT9SRQIK1-2WT6yjr5g0Ifwru7pkGl1M2-3PgoNMbAY6JrP2YIXmKPN-D0cNeNipM' },
+  { name: 'Blazer Structuré', price: '189 DT', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCcPTIe4KpvarIxt541R0Om-eb_9dMd63YtAaFATTIymfU7m026h2PKN4HQYdxuH7e1EKYEvpAd-i3tctnsWUzw88vQbeVJEHRYG01Z1mmm_Gt6SNSEueXdxVpxVC_88hxQHC3sfHZAu4DYRXB_wi5-4snPVt79I7BDU_esq4UfyS78XoqwOy6z_EMiO4-SYpFRgWtONFEOpbGQbGX57xDnul0AZ7kZy71QN712q2_aJMQ0ghaZInP5hlqASaDocq4wQ8yPZEH27zNg' },
+  { name: 'Pantalon Large en Laine', price: '95 DT', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCrkINWGSPeBdQgSF9KZ82vd3891E4467EiXKjBKlOykKNTNrYJfEEeqZ9vCemAAxyFocVikXNeIKi2KY-8w9_NIBd5afEo8Rldq0Lv1PZjcR8cRdUY0dBI1uX9MssfSqXNSwTNG0xGs4726FP8uTwP69F068gyKeZKgk99BQspI3HcALJINBq5wgJ9fMe_0G54GtCdY-vCCYzc76uQCWfMIKZELFx6XZCOqZ4ToOQiZVMmOKJck-_MEdaY4zyxCCYiPiJ9irr91j39' },
+  { name: 'Top en Maille Fine', price: '59 DT', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBKU1mroyKUsGn5c4ReIE1JGodFlFXL2Sovt2OFe5z622gHhqo3VQm4OdDZnR__frw-Lp8_FDTN2d0YR2JKP-e1Qm-RYNJLOfAZvcNMB3EXuuz6SqCYkrIgD0skbfvJLI48zF-nmxTXEA1FSXZPykPyp0RQw0vTxauj8gw53qs1LmGBFRIlAijJXH0Qn1V_lZbShkxZl1zulYWw1JA3cXCzDkqKXr-M7F4b7o-8fLFsYAAmwzCmAIrjLyI-KNTBsXVZ5K6yVc7V-COA' },
+  { name: 'Manteau en Cachemire', price: '450 DT', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuALOc-p7AGF5fuEYdOTzWuwDyHZTUvkx1UWZQlKurRFJBDwH9Bjct6wkHC2RMFRHMWH8HuflXBV3xcB9vFn9ay4Oe9BFG4N_3K3u4q79bsXg6aDEgQw1qMIfk11fDlD9cprgOBhvxr-xJN5_pYL-ZdrEIm1yXFdnhl3PdQr60qm7NSmTpGLjYsQ0-rHRxsAgnutsY_ce9KOgxCgT9SRQIK1-2WT6yjr5g0Ifwru7pkGl1M2-3PgoNMbAY6JrP2YIXmKPN-D0cNeNipM' },
 ]
 
 export default function ProductDetail() {

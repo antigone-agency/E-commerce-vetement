@@ -900,7 +900,7 @@ export default function Apparence() {
                             </span>
                           </span>
                           <span className="w-1/3 text-xs font-bold text-right font-body" style={{ color: current.primaryColor }}>
-                            89,00 €
+                            89,00 DT
                           </span>
                         </div>
                       </div>

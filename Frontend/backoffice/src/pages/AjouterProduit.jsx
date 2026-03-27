@@ -352,7 +352,7 @@ function AjouterProduit() {
                   <table className="w-full">
                     <thead>
                       <tr className="text-left border-b border-slate-100">
-                        {['Variante', 'SKU', 'Prix (€)', 'Stock', 'Action'].map((h, i) => (
+                        {['Variante', 'SKU', 'Prix (DT)', 'Stock', 'Action'].map((h, i) => (
                           <th
                             key={h}
                             className={`pb-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 ${i === 4 ? 'text-right' : ''}`}
@@ -508,9 +508,9 @@ function AjouterProduit() {
               </div>
               <div className="p-6 space-y-6">
                 <div>
-                  <Label required>Prix de vente (€)</Label>
+                  <Label required>Prix de vente (DT)</Label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">€</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">DT</span>
                     <input
                       type="number"
                       step="0.01"
@@ -540,9 +540,9 @@ function AjouterProduit() {
                 {promoActive && (
                   <div className="space-y-5 pt-1">
                     <div>
-                      <Label>Prix en promotion (€)</Label>
+                      <Label>Prix en promotion (DT)</Label>
                       <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">€</span>
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">DT</span>
                         <input
                           type="number"
                           step="0.01"
@@ -561,9 +561,9 @@ function AjouterProduit() {
                           Aperçu Promotion
                         </span>
                         <div className="flex items-center gap-2">
-                          <span className="text-slate-400 line-through text-sm">{salePrice}€</span>
+                          <span className="text-slate-400 line-through text-sm">{salePrice} DT</span>
                           <span className="material-symbols-outlined text-brand text-sm">arrow_forward</span>
-                          <span className="text-brand font-bold text-lg">{parseFloat(promoPrice).toFixed(2)}€</span>
+                          <span className="text-brand font-bold text-lg">{parseFloat(promoPrice).toFixed(2)} DT</span>
                         </div>
                       </div>
                     )}

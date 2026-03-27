@@ -4,49 +4,49 @@ import { useNavigate } from 'react-router-dom'
 /* ── Product Data ── */
 const products = [
   {
-    slug: 'robe-soie-minimaliste', name: 'Robe Soie Minimaliste', price: '280,00€',
+    slug: 'robe-soie-minimaliste', name: 'Robe Soie Minimaliste', price: '280,00 DT',
     colors: ['#000000', '#adabaa'],
     img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDHuasFLd0RV1iOBh-UDbJHA6kDZhGdh_cSxCkzkjsRyhzwylSlDVLalFw1JHbKvq3aBusXKUaXDXH_33qTdkK2DLIHIRWZ153HNVdn_q_6D45Rq-EXJN7kajIJEfYTE5SvFf-O0Q2uHMnLJlnDB-CkvQrMfIHXViOTAgTAQWwzZtY57Ds1L6XANL_CF9IzHrG4fNhqyFdlB2HBIc0MjRiE0a0tgLdQIkFq3Gqliwwxv4G4fZpCnolA-U4zVWityuItohemZgiM2aYx',
     imgHover: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA5Gzco2jvXHOnu6sf-zFNxULPDh7GjL3VVD-VEEQFg_An4QtHo8Qsvog8ZplQXCFCH3m2RgU5d8VoFPVm7V5uw6iJhg5-NdL-VtGWBZhkP7N04dMVUmBUX6BomPbmnaGt5Oljh0kyXI4BrvqvdAGFrpw9Xtz-8CE19au1y0y9ljZMZ_RoAXQtw59su6Lxcc6WU09Q8S8We6bptPd_ocw9E40C3uqP7QXX0XFSw5Uq0-TJrwlTRhgBygeZ0hnalm7x0wAhHNIMFWx-n',
   },
   {
-    slug: 'chemise-oversize-coton', name: 'Chemise Oversize Coton', price: '145,00€',
+    slug: 'chemise-oversize-coton', name: 'Chemise Oversize Coton', price: '145,00 DT',
     colors: ['#ffffff', '#e2e2e2'],
     img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB1-bXKWhCL07flnD2XRbGUwK27MpXKxLrFEcPXrEI48d7oT5MXzl2q-gWkmIsPXPG-i6O4QSZqkeMzUiwsANdqeUOC8q_3I1mmk0wjbUEMI4D2cqn13TRLpt0eQosHqx7Tn1AHELmXkVdbdzwhwAfrY8CON_FWuZti7VDyoN2WCHBmWW3ZjR7svvxQhD6JMvzStGP7OFxg4qcprE9eGOAXS23S3vnuoina4rs_THC4TywPOIvVIDjQ8CTC7ThDEd48sXStXTJxZ4M2',
     imgHover: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBJxJGPt0OA_cvOEDIDCobVyGWg5Debkg3jAnkYbqW3VftPhnDG1uWdnxSXp-x76P5wj0GfilbXRF03g6_jMKltdPfi3w8Pu1K9T2Tlan_AkXT98uHebyb9piFmCXjuv3ID92KZoxX6weNYzpKslfTinQdqTqzpBWC0QVCs9EMcpnMaYAttQeD9a_oHXx_V6FXo5f7Ry_OLi21UllXeSSqMwN8aBbyV2VDk0kE5C_ikQVpnECpMfXQFm8jkrWMLfej2UJ2E2ljZHpQF',
   },
   {
-    slug: 'trench-gabardine-structure', name: 'Trench Gabardine Structuré', price: '420,00€',
+    slug: 'trench-gabardine-structure', name: 'Trench Gabardine Structuré', price: '420,00 DT',
     colors: ['#adabaa', '#474747'],
     img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAYIxhk5PDZhb3-W19oV-_bn-eFYcI5ZXlk9H9ksJnWMApEi1ADJNmGmHMLnaeSwv8W9GiUJofuooqoMP7f1iv4S4yyZSSScbCqyFzlud1M_PogS5UBni47G_hlcmAx592UcGqszUP2I8SZ6KW_JZVDxKMLHylEhjBNjxpFNylUCkSL03-i7uL03rAue-jcLEKE_2RrrPF6wwwFG1wJYmeSuyeao_BDFkkIAfvL1dsgGI7dqKFNVSd_F0okdKhWPDOydUTnkFYe_HSH',
     imgHover: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDUATeJ0ZRPlm49COh58qLWBpvdCQJF4SUZJmjtt0RsAEcvpmUjr6260affFPDB3Mf84u4gWbhsV_q2SYI1KxnaIjZfD-7Z0QfD2i16wEe97aCSHF2aO7F57Y2chA3UCgs2CfQ0-AqTvErT0Wtj1wQXw6F03VDI-alEnH7iwFsoW3QM8jtntnJXlL-bQvHsTF-S7VwqobZim3kpfQ7HMZZtueYIGMf1x9dLY8e2Kt3REbLoM8AJw4TBa3lcxZNSEUbt5KkNQwLk9TwD',
   },
   {
-    slug: 'pantalon-large-laine', name: 'Pantalon Large Laine', price: '190,00€',
+    slug: 'pantalon-large-laine', name: 'Pantalon Large Laine', price: '190,00 DT',
     colors: ['#474747', '#000000'],
     img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA-k36kV7TPM31RxnnZi5YPSv9sV_yQxpuYZl3H_7d5HRXXof9ZADnZOJOORk4oSo1cvuijGnCitnZVA3Nftt3MLoomRkpMs8Fp8f_IUr_tCeg5xM-Od918A51kmJSbFT4jR16M4u2eyJnKnGqmGEqcURaTjFJm-KD-I8mvDK18SQk7N_nFY5coX3Z706-T9Ref95tlnqUxANB8K1o-fj4TsfEbMh-V8FTNtp6_IYn4yqH-YgDioLwFd0BB4bByB23vwB-yj9EurG7M',
     imgHover: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAMCQaqukLrN4LPY6Ddhj87XTqrlTAIbXlzkV4I2RDzTIudm9pD0mxnv6QMFzesXJDHI7qC1RtF0SQAqCmVCSN849Y6uQv_uQBn8UMFPZXaXisymMAz5YlFtKPuvkQpijohD5yVCtkju3r8v3rTEWYD1JDWX6Umb4dhWJxw1myz9jMtc-nmJ3NHB_EwQSFbVSNBzRmNWTQuwx5h_tt34YTZUXNW2FFddnFVD-lat7AR0ei6lzIWY04x7L--i4I7bbnLSXIOh7VWcxDX',
   },
   {
-    slug: 'top-fluide-imprime', name: 'Top Fluide Imprimé', price: '85,00€',
+    slug: 'top-fluide-imprime', name: 'Top Fluide Imprimé', price: '85,00 DT',
     colors: ['#e2e2e2'],
     img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAjqLnyVIbURx-170kFClmuOhHhZPBVeWwM-mq4ly8iEd10jFWJo8_sBJvtTSIgKKh8rV9uyzsXrMeUEr1X0hvh16K5ch5ftld-FFAj9lNlHObB2-xye1U9yAZAipEQqVBGa9UFmdMZSmUOIrdp1jGzJp4vDF70m3njbCmUTpr5weKQKN2O0hlQCyiu1uV070yb1OWnD2nC_-dwV5fOCVAt_0HRU9BQYXo891KQnU9inNENh4pI7JQYQ75A0EDWBh63xA8o3FP6BWeY',
     imgHover: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBQhKkfivL-HieAAgjsv_s6NYVn4nqWoLoCINRph-fJdz0bhYbpuUQoTyla_etUfRRqX6AmszNzHmf3vuFVAeW0k0cdGtJrlW74Ut6O7fvwA-5eokpujxgwRDYzfrSQQVHcAL7EjLJI3Vg2MpTYLhb8GHM0RjeQHMeItnirSrg5OpJvGJ0UU6kKb0UJnlvjs_gcGFG65A8NNbDSJU4iEUxyH2TptuYDXDwV-pnWnDbewhwxWJwTfeGU3OLk3KlzOWilMLd8BI_GGqn7',
   },
   {
-    slug: 'veste-croisee-charcoal', name: 'Veste Croisée Charcoal', price: '350,00€',
+    slug: 'veste-croisee-charcoal', name: 'Veste Croisée Charcoal', price: '350,00 DT',
     colors: ['#3b3b3c'],
     img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAkM6aVE9mwbDwxqKCHnloJzCXQAyiN2H4gBQYUtXpRVytVu5BSB9eMG3LBaG-N9yYOiXLntFp8L0zjobWFXcDM3XbAckMMgiS_GVZqVtBvw8tF2WgUfKrc8NTQMpRfiOnK1_Gk5XwyGqq8L2jHJFlJkuHbi9WxjZx73ECYkNESMrJrGiKrMwXypsT3KSJ3lJXumDUhn2tSX3dLghYBNlcy_sA-rxHgyRI1SsUVUvDErEHBgVWvIQEguKrFf8lLYd9w9_CczUm5rJgm',
     imgHover: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDF-OvGyj4TWLAxfafwhHj-HhDvcDXG48BapiECmH8QN49WYS82Cbqk6CnDTjiPM6x6zbY_V6ENYJpAShW9lNRKRaIsvCTKtHp1W85B3WwAaCZqy7FuHX446aflZtRyX9kYeXQ94I7osOZz-gOFBcRJumhpGlmI_oMGfU2fhnRuzRrMZpAWbyufWzQex59Cl9mN0ZSOvMsE3v7cVMMsSN-FGNJVngL1z9kfGcaO1iENAdAPsdKXigSmyhusXdLu5Vj5V3VP3vIa7PDZ',
   },
   {
-    slug: 'sac-cabas-cuir-graine', name: 'Sac Cabas Cuir Grainé', price: '550,00€',
+    slug: 'sac-cabas-cuir-graine', name: 'Sac Cabas Cuir Grainé', price: '550,00 DT',
     colors: ['#000000'],
     img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC9zdNGeYA42g1ssyN0P1A90519ujotj9oBWAMKLKFGsDG7Wxh39v2w76MFiIQTr7u5S7ZpTHarqFWYGdCFVYPoQZmuXcUMK6zBCe-aoOfRaLEJ3U5ZsfdVl-zvm6Zm_dn63Ny8RLhu0-IVa8yavl58MyYJVzrWY1srWeGDeT9RknI5cJtTr0wssp89h1vzcZkmvhwgljud-fLvUCplYL5asA9HGT9Jf5IzTUNK8aDAM0bCbfcBuE2Qdq9ObJEUwPNd9efJoaodBjbH',
     imgHover: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAyHE2TTSh98KhvpoHNw15Vv9nqfomIf9yijJ1bm97F_jD5nOzuEH4d0Ng7UNNRMdG3CK76iE7N1Q-nEcEhfa7mMUZuuVdNn7M0MOxzDLQRhg0Ga_y79yAheaDo9U60KyDQ7G3MSMGbQunDxFAer2aeI-d3kfg_A00DbVBnQLvZ0x8F3BM_YHBNdgkkjIIScJ2SuAlkx0CE7tAIhzHCMXhRYYsulB59di8Eq_5CI83lkzzqONRwl_vYUiZ9WqRoG10lk17EpN7PF8Jc',
   },
   {
-    slug: 'pull-cachemire-epais', name: 'Pull Cachemire Épais', price: '295,00€',
+    slug: 'pull-cachemire-epais', name: 'Pull Cachemire Épais', price: '295,00 DT',
     colors: ['#e2e2e2', '#adabaa'],
     img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBJth2A7HL2azpBJAAwM9NgXQcXJKLNka-Erl0U7RnPSJu1v0ZT8bpfwnWVjDhkJDzq3OhdDr9vc0oAtsJmBBsCavBffiu1IGx_EndfN3ROuWKpm0-eppZx_JNLanKJP6gyfsZHSeg8JyZPeiGJ64IAbDaId07aBCrjF7hLF7LgMcX20nnHMe1PRJhMZ2uwxec2RQrAlCTDW3VeP23B6xpAQOL5furhYZ-p7jAiQ2RNhIc1MjsRK4eNfnPRvMzsJOB5SdVTSp1nTNye',
     imgHover: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBMzHS9vvV1T8m2KuY_iwkNT3ha1NeWu90QOjdUlAsa_OET716bpNX9yJB7QkYI_-EYGZED9kdhhzS3Qui-a7SNy3OaNVLLixDFMMUdvXN3PczCmRtPjhZb2Qkx46wVoNybYsJ0D6xa98H9fg49cX8wZNCVaf4bcdhib5m482mwLJHXDnVCrkFvgrmtO_RpmJYZyEfYsUk55LZfuavlqAF_xf-R2oyJKHi9gk5wtkC5PQrBuuL2ph1r7r8-P-pkgAsnpYsc3DdVuSuQ',
@@ -55,13 +55,13 @@ const products = [
 
 const sizes = ['XS', 'S', 'M', 'L']
 const colorFilters = ['#000000', '#ffffff', '#e2e2e2', '#adabaa', '#474747']
-const priceRanges = ['0€ - 100€', '100€ - 300€', '300€+']
+const priceRanges = ['0 - 100 DT', '100 - 300 DT', '300+ DT']
 const collections = ['Printemps-Été 2024', 'Essentiels', 'Archives']
 
 export default function Products() {
   const navigate = useNavigate()
   const [selectedSize, setSelectedSize] = useState('S')
-  const [selectedPrice, setSelectedPrice] = useState('100€ - 300€')
+  const [selectedPrice, setSelectedPrice] = useState('100 - 300 DT')
   const [sortBy, setSortBy] = useState('nouveautes')
   const [currentPage, setCurrentPage] = useState(1)
 

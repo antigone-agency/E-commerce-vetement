@@ -298,7 +298,7 @@ export default function AjouterCollection() {
                     <label className="block text-[10px] font-bold text-slate-500 uppercase">Prix inférieur à</label>
                     <div className="relative">
                       <Input type="number" value={prixMax} onChange={(e) => setPrixMax(e.target.value)} placeholder="0.00" className="pr-8" />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">€</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">DT</span>
                     </div>
                   </div>
                   <div className="space-y-2">

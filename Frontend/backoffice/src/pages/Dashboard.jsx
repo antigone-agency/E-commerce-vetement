@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 const kpiCards = [
   {
     label: "Chiffre d'affaires",
-    value: '124.592 €',
+    value: '124.592 DT',
     trend: '+12.5%',
     trendUp: true,
     icon: 'payments',
@@ -19,7 +19,7 @@ const kpiCards = [
   },
   {
     label: 'Panier moyen',
-    value: '67.63 €',
+    value: '67.63 DT',
     trend: '-2.3%',
     trendUp: false,
     icon: 'shopping_cart',
@@ -51,7 +51,7 @@ const quickActions = [
 ]
 
 const inventoryStats = [
-  { label: 'Valeur stock', value: '482.4K€', bg: 'bg-slate-50',  border: 'border-slate-100',  text: 'text-slate-800',  labelColor: 'text-slate-500' },
+  { label: 'Valeur stock', value: '482.4K DT', bg: 'bg-slate-50',  border: 'border-slate-100',  text: 'text-slate-800',  labelColor: 'text-slate-500' },
   { label: 'Rupture',      value: '8 refs',  bg: 'bg-red-50',    border: 'border-red-100',    text: 'text-red-600',    labelColor: 'text-red-500' },
   { label: 'Faible',       value: '14 refs', bg: 'bg-amber-50',  border: 'border-amber-100',  text: 'text-amber-600',  labelColor: 'text-amber-500' },
   { label: 'Surstock',     value: '3 refs',  bg: 'bg-blue-50',   border: 'border-blue-100',   text: 'text-blue-600',   labelColor: 'text-blue-500' },
@@ -72,16 +72,16 @@ const alerts = [
 ]
 
 const topProducts = [
-  { name: 'Combinaison FR Pro Arctic', badge: 'BEST SELLER', badgeBg: 'bg-badge/10 text-badge',       sales: '240 ventes · +12% cette semaine', price: '14.400 €', stock: '42',  stockRed: false, color: 'bg-slate-300' },
-  { name: 'Sneakers Ultra-Grip v3',    badge: 'TRENDING',    badgeBg: 'bg-amber-100 text-amber-700',  sales: '185 ventes · +24% en 24h',        price: '11.100 €', stock: '8',   stockRed: true,  color: 'bg-blue-200' },
-  { name: 'Jeans Cargo Renforcé Blue', badge: 'LOW STOCK',   badgeBg: 'bg-red-100 text-red-700',      sales: '92 ventes · Demande stable',       price: '5.520 €',  stock: '2',   stockRed: true,  color: 'bg-indigo-200' },
+  { name: 'Combinaison FR Pro Arctic', badge: 'BEST SELLER', badgeBg: 'bg-badge/10 text-badge',       sales: '240 ventes · +12% cette semaine', price: '14.400 DT', stock: '42',  stockRed: false, color: 'bg-slate-300' },
+  { name: 'Sneakers Ultra-Grip v3',    badge: 'TRENDING',    badgeBg: 'bg-amber-100 text-amber-700',  sales: '185 ventes · +24% en 24h',        price: '11.100 DT', stock: '8',   stockRed: true,  color: 'bg-blue-200' },
+  { name: 'Jeans Cargo Renforcé Blue', badge: 'LOW STOCK',   badgeBg: 'bg-red-100 text-red-700',      sales: '92 ventes · Demande stable',       price: '5.520 DT',  stock: '2',   stockRed: true,  color: 'bg-indigo-200' },
 ]
 
 const categoryBars = [
-  { label: 'Vestes',      value: '93K€',  pct: 180, color: 'bg-brand',       textColor: 'text-brand',       trend: '+12%', trendColor: 'text-brand' },
-  { label: 'Sneakers',    value: '56K€',  pct: 120, color: 'bg-blue-500',    textColor: 'text-slate-800',   trend: '+8%',  trendColor: 'text-brand' },
-  { label: 'Jeans',       value: '31K€',  pct: 80,  color: 'bg-indigo-400',  textColor: 'text-indigo-700',  trend: '-3%',  trendColor: 'text-red-500' },
-  { label: 'Accessoires', value: '18K€',  pct: 50,  color: 'bg-amber-400',   textColor: 'text-amber-700',   trend: '+15%', trendColor: 'text-brand' },
+  { label: 'Vestes',      value: '93K DT',  pct: 180, color: 'bg-brand',       textColor: 'text-brand',       trend: '+12%', trendColor: 'text-brand' },
+  { label: 'Sneakers',    value: '56K DT',  pct: 120, color: 'bg-blue-500',    textColor: 'text-slate-800',   trend: '+8%',  trendColor: 'text-brand' },
+  { label: 'Jeans',       value: '31K DT',  pct: 80,  color: 'bg-indigo-400',  textColor: 'text-indigo-700',  trend: '-3%',  trendColor: 'text-red-500' },
+  { label: 'Accessoires', value: '18K DT',  pct: 50,  color: 'bg-amber-400',   textColor: 'text-amber-700',   trend: '+15%', trendColor: 'text-brand' },
 ]
 
 const clientStats = [
@@ -101,9 +101,9 @@ const orderStatuses = [
 ]
 
 const recentOrders = [
-  { id: '#ORD-9421', client: 'Ironclad Construction', status: 'En attente', statusBg: 'bg-amber-100 text-amber-700',   total: '1.420 €' },
-  { id: '#ORD-9420', client: 'Sarah Jenkins',         status: 'Expédiée',   statusBg: 'bg-badge/10 text-badge', total: '125,50 €' },
-  { id: '#ORD-9418', client: 'Tech Logistics S.A.',   status: 'Retour',     statusBg: 'bg-slate-100 text-slate-700',    total: '842,00 €' },
+  { id: '#ORD-9421', client: 'Ironclad Construction', status: 'En attente', statusBg: 'bg-amber-100 text-amber-700',   total: '1.420 DT' },
+  { id: '#ORD-9420', client: 'Sarah Jenkins',         status: 'Expédiée',   statusBg: 'bg-badge/10 text-badge', total: '125,50 DT' },
+  { id: '#ORD-9418', client: 'Tech Logistics S.A.',   status: 'Retour',     statusBg: 'bg-slate-100 text-slate-700',    total: '842,00 DT' },
 ]
 
 // ── Canvas Revenue Chart ───────────────────────────────────────────────────────

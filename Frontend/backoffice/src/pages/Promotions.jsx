@@ -1,11 +1,15 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { toast } from 'react-toastify'
 import PageHeader from '../components/ui/PageHeader'
 import KpiCard from '../components/ui/KpiCard'
 import CustomSelect from '../components/ui/CustomSelect'
+import Spinner from '../components/ui/Spinner'
+import { promotionApi } from '../api/promotionApi'
+import { categoryApi } from '../api/categoryApi'
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   MOCK DATA
+   CONFIG MAPS
    ══════════════════════════════════════════════════════════════════════════ */
 const typeConfig = {
   pourcentage:  { label: 'Pourcentage',       icon: 'percent',         badge: 'bg-blue-50 text-blue-700 border-blue-100' },
@@ -22,60 +26,8 @@ const statutConfig = {
   planifie: { label: 'PLANIFIÉ', bg: 'bg-blue-500 text-white' },
 }
 
-const initialCoupons = [
-  {
-    id: 1, code: 'SUMMER24', type: 'pourcentage', valeur: 20, montantMin: 50,
-    dateDebut: '2024-06-01', dateFin: '2024-08-31', heureDebut: '00:00', heureFin: '23:59',
-    statut: 'actif', utilisations: 45, limiteGlobale: 100, limiteClient: 1,
-    segment: 'tous', categories: ['Vestes'], produits: [],
-    revenus: 2850, commandes: 45, conversion: 42, auto: false,
-  },
-  {
-    id: 2, code: 'WELCOME10', type: 'pourcentage', valeur: 10, montantMin: 0,
-    dateDebut: '2024-01-01', dateFin: '', heureDebut: '00:00', heureFin: '23:59',
-    statut: 'actif', utilisations: 128, limiteGlobale: 0, limiteClient: 1,
-    segment: 'nouveaux', categories: [], produits: [],
-    revenus: 4200, commandes: 128, conversion: 38, auto: true,
-  },
-  {
-    id: 3, code: 'WINTER23', type: 'pourcentage', valeur: 15, montantMin: 30,
-    dateDebut: '2023-11-01', dateFin: '2023-12-31', heureDebut: '00:00', heureFin: '23:59',
-    statut: 'expire', utilisations: 89, limiteGlobale: 200, limiteClient: 2,
-    segment: 'tous', categories: [], produits: [],
-    revenus: 1560, commandes: 89, conversion: 5, auto: false,
-  },
-  {
-    id: 4, code: 'FREESHIP', type: 'livraison', valeur: 0, montantMin: 75,
-    dateDebut: '2024-03-01', dateFin: '2024-06-30', heureDebut: '08:00', heureFin: '22:00',
-    statut: 'actif', utilisations: 210, limiteGlobale: 500, limiteClient: 3,
-    segment: 'fideles', categories: [], produits: [],
-    revenus: 6300, commandes: 210, conversion: 28, auto: false,
-  },
-  {
-    id: 5, code: 'VIP-BOGO', type: 'bogo', valeur: 0, montantMin: 100,
-    dateDebut: '2024-07-01', dateFin: '2024-07-15', heureDebut: '00:00', heureFin: '23:59',
-    statut: 'planifie', utilisations: 0, limiteGlobale: 50, limiteClient: 1,
-    segment: 'vip', categories: ['Chaussures'], produits: [],
-    revenus: 0, commandes: 0, conversion: 0, auto: false,
-  },
-  {
-    id: 6, code: 'GIFT-20', type: 'cadeau', valeur: 20, montantMin: 150,
-    dateDebut: '2024-04-01', dateFin: '2024-04-30', heureDebut: '00:00', heureFin: '23:59',
-    statut: 'brouillon', utilisations: 0, limiteGlobale: 30, limiteClient: 1,
-    segment: 'tous', categories: [], produits: ['Casque Pro'],
-    revenus: 0, commandes: 0, conversion: 0, auto: false,
-  },
-  {
-    id: 7, code: 'BIRTHDAY', type: 'fixe', valeur: 15, montantMin: 0,
-    dateDebut: '', dateFin: '', heureDebut: '', heureFin: '',
-    statut: 'actif', utilisations: 64, limiteGlobale: 0, limiteClient: 1,
-    segment: 'tous', categories: [], produits: [],
-    revenus: 960, commandes: 64, conversion: 72, auto: true,
-  },
-]
-
 const segmentOptions = [
-  { value: 'tous', label: 'Tous les clients' },
+  { value: '', label: 'Tous les clients' },
   { value: 'vip', label: 'Clients VIP' },
   { value: 'nouveaux', label: 'Nouveaux clients' },
   { value: 'fideles', label: 'Clients fidèles' },
@@ -84,22 +36,20 @@ const segmentOptions = [
 
 const typeOptions = [
   { value: 'pourcentage', label: 'Pourcentage (%)' },
-  { value: 'fixe', label: 'Montant fixe (€)' },
+  { value: 'fixe', label: 'Montant fixe (DT)' },
   { value: 'livraison', label: 'Livraison gratuite' },
   { value: 'cadeau', label: 'Cadeau' },
   { value: 'bogo', label: 'BOGO (1 acheté = 1 offert)' },
 ]
 
-const categorieOptions = ['Vestes', 'Chaussures', 'Pantalons', 'Gants', 'Casques', 'Accessoires']
-
 const filterStatutOptions = ['Tous les statuts', 'Actif', 'Expiré', 'Brouillon', 'Planifié']
 const filterTypeOptions = ['Tous les types', 'Pourcentage', 'Montant fixe', 'Livraison gratuite', 'Cadeau', 'BOGO']
 
 const autoTriggers = [
-  { icon: 'cake', label: 'Anniversaire client', desc: 'Cadeau automatique le jour de l\'anniversaire', color: 'text-pink-500' },
-  { icon: 'redeem', label: 'Première commande', desc: 'Bienvenue -10% sur le 1er achat', color: 'text-brand' },
-  { icon: 'remove_shopping_cart', label: 'Panier abandonné', desc: 'Relance -5% après 24h d\'abandon', color: 'text-amber-500' },
-  { icon: 'psychology', label: 'Client hésitant', desc: 'Détecte hésitation → -10% flash auto', color: 'text-blue-500' },
+  { icon: 'cake', label: 'Anniversaire client', desc: 'Cadeau automatique le jour de l\'anniversaire', color: 'text-pink-500', trigger: 'anniversaire' },
+  { icon: 'redeem', label: 'Première commande', desc: 'Bienvenue -10% sur le 1er achat', color: 'text-brand', trigger: 'premiere_commande' },
+  { icon: 'remove_shopping_cart', label: 'Panier abandonné', desc: 'Relance -5% après 24h d\'abandon', color: 'text-amber-500', trigger: 'panier_abandonne' },
+  { icon: 'psychology', label: 'Client hésitant', desc: 'Détecte hésitation → -10% flash auto', color: 'text-blue-500', trigger: 'hesitation' },
 ]
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -110,6 +60,18 @@ function genCode() {
   let c = 'AUTO-'
   for (let i = 0; i < 5; i++) c += chars[Math.floor(Math.random() * chars.length)]
   return c
+}
+
+function InfoTip({ text }) {
+  return (
+    <span className="relative group inline-flex ml-1 align-middle">
+      <span className="material-symbols-outlined text-slate-300 hover:text-brand cursor-help transition-colors" style={{ fontSize: '14px' }}>info</span>
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-slate-800 text-white text-[10px] leading-tight rounded-lg whitespace-normal w-52 text-center opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-[60] shadow-lg">
+        {text}
+        <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+      </span>
+    </span>
+  )
 }
 
 function ProgressBar({ value, max, color = 'bg-brand' }) {
@@ -129,10 +91,20 @@ function ProgressBar({ value, max, color = 'bg-brand' }) {
    ══════════════════════════════════════════════════════════════════════════ */
 export default function Promotions() {
   /* ── Tab ── */
-  const [tab, setTab] = useState('coupons') // 'coupons' | 'remise'
+  const [tab, setTab] = useState('coupons')
+
+  /* ── Loading ── */
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+
+  /* ── Stats from API ── */
+  const [stats, setStats] = useState(null)
+
+  /* ── Categories from API ── */
+  const [categoriesList, setCategoriesList] = useState([])
 
   /* ── Coupons state ── */
-  const [coupons, setCoupons] = useState(initialCoupons)
+  const [coupons, setCoupons] = useState([])
   const [search, setSearch] = useState('')
   const [filterStatut, setFilterStatut] = useState('Tous les statuts')
   const [filterType, setFilterType] = useState('Tous les types')
@@ -151,19 +123,52 @@ export default function Promotions() {
   const [newHeureFin, setNewHeureFin] = useState('23:59')
   const [newLimiteGlobale, setNewLimiteGlobale] = useState('')
   const [newLimiteClient, setNewLimiteClient] = useState('1')
-  const [newSegment, setNewSegment] = useState('tous')
+  const [newSegment, setNewSegment] = useState('')
   const [newCategories, setNewCategories] = useState([])
   const [newAuto, setNewAuto] = useState(false)
+  const [showPlanification, setShowPlanification] = useState(false)
+  const [limiteMode, setLimiteMode] = useState('unique')
 
   /* ── Modal détail / performances ── */
   const [detailCoupon, setDetailCoupon] = useState(null)
 
+  /* ── Discounts state ── */
+  const [discounts, setDiscounts] = useState([])
+
   /* ── Remise rapide ── */
+  const [remiseNom, setRemiseNom] = useState('')
   const [remiseProduit, setRemiseProduit] = useState('')
   const [remiseType, setRemiseType] = useState('pourcentage')
   const [remiseValeur, setRemiseValeur] = useState('')
   const [remiseCategorie, setRemiseCategorie] = useState('')
-  const [remisePrixOriginal] = useState(100) // demo
+  const [remisePrixOriginal, setRemisePrixOriginal] = useState('')
+  const [remiseDateDebut, setRemiseDateDebut] = useState('')
+  const [remiseDateFin, setRemiseDateFin] = useState('')
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     DATA FETCHING
+     ══════════════════════════════════════════════════════════════════════ */
+  const fetchAll = useCallback(async () => {
+    setLoading(true)
+    try {
+      const [couponsData, discountsData, statsData, catsData] = await Promise.all([
+        promotionApi.getAllCoupons(),
+        promotionApi.getAllDiscounts(),
+        promotionApi.getStats(),
+        categoryApi.getAll().catch(() => []),
+      ])
+      setCoupons(couponsData || [])
+      setDiscounts(discountsData || [])
+      setStats(statsData || null)
+      setCategoriesList((catsData || []).map(c => c.nom || c.name))
+    } catch {
+      toast.error('Erreur lors du chargement des promotions.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { fetchAll() }, [fetchAll])
 
   /* ── Filtering ── */
   const filtered = useMemo(() => {
@@ -187,17 +192,13 @@ export default function Promotions() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
   const paginated = filtered.slice((page - 1) * perPage, page * perPage)
 
-  /* ── KPIs ── */
-  const actifs = coupons.filter(c => c.statut === 'actif').length
-  const totalRevenus = coupons.reduce((s, c) => s + c.revenus, 0)
-  const totalUtilisations = coupons.reduce((s, c) => s + c.utilisations, 0)
-  const avgConversion = coupons.filter(c => c.conversion > 0).length > 0
-    ? Math.round(coupons.filter(c => c.conversion > 0).reduce((s, c) => s + c.conversion, 0) / coupons.filter(c => c.conversion > 0).length)
-    : 0
-
-  /* ── Smart insights ── */
-  const bestCoupon = [...coupons].filter(c => c.conversion > 0).sort((a, b) => b.conversion - a.conversion)[0]
-  const worstCoupon = [...coupons].filter(c => c.statut !== 'brouillon' && c.statut !== 'planifie' && c.utilisations > 0).sort((a, b) => a.conversion - b.conversion)[0]
+  /* ── KPIs (from stats API) ── */
+  const actifs = stats?.couponsActifs ?? 0
+  const totalRevenus = stats?.totalRevenus ?? 0
+  const totalUtilisations = stats?.totalUtilisations ?? 0
+  const avgConversion = stats ? Math.round(stats.avgConversion) : 0
+  const bestCoupon = stats?.bestCouponCode ? { code: stats.bestCouponCode, conversion: stats.bestCouponConversion, revenus: stats.bestCouponRevenus } : null
+  const worstCoupon = stats?.worstCouponCode ? { code: stats.worstCouponCode, conversion: stats.worstCouponConversion } : null
 
   /* ── Actions ── */
   const copierCode = (code) => {
@@ -205,18 +206,32 @@ export default function Promotions() {
     toast.success(`Code "${code}" copié !`)
   }
 
-  const supprimerCoupon = (id) => {
-    setCoupons(prev => prev.filter(c => c.id !== id))
-    toast.success('Coupon supprimé.')
+  const supprimerCoupon = async (id) => {
+    try {
+      await promotionApi.deleteCoupon(id)
+      setCoupons(prev => prev.filter(c => c.id !== id))
+      toast.success('Coupon supprimé.')
+      refreshStats()
+    } catch {
+      toast.error('Erreur lors de la suppression.')
+    }
   }
 
-  const toggleStatut = (id) => {
-    setCoupons(prev => prev.map(c => {
-      if (c.id !== id) return c
-      if (c.statut === 'actif') return { ...c, statut: 'brouillon' }
-      if (c.statut === 'brouillon' || c.statut === 'planifie') return { ...c, statut: 'actif' }
-      return c
-    }))
+  const toggleStatut = async (id) => {
+    try {
+      const updated = await promotionApi.toggleCouponStatut(id)
+      setCoupons(prev => prev.map(c => c.id === id ? updated : c))
+      refreshStats()
+    } catch {
+      toast.error('Erreur lors du changement de statut.')
+    }
+  }
+
+  const refreshStats = async () => {
+    try {
+      const s = await promotionApi.getStats()
+      setStats(s)
+    } catch { /* silent */ }
   }
 
   const openCreate = () => {
@@ -230,40 +245,45 @@ export default function Promotions() {
     setNewHeureFin('23:59')
     setNewLimiteGlobale('')
     setNewLimiteClient('1')
-    setNewSegment('tous')
+    setNewSegment('')
     setNewCategories([])
     setNewAuto(false)
+    setShowPlanification(false)
+    setLimiteMode('unique')
     setShowCreate(true)
   }
 
-  const submitCreate = () => {
+  const submitCreate = async () => {
     if (!newCode.trim()) return toast.error('Le code est obligatoire.')
     if ((newType === 'pourcentage' || newType === 'fixe') && !newValeur) return toast.error('La valeur est obligatoire.')
-    const coupon = {
-      id: Date.now(),
-      code: newCode.trim().toUpperCase(),
-      type: newType,
-      valeur: parseFloat(newValeur) || 0,
-      montantMin: parseFloat(newMontantMin) || 0,
-      dateDebut: newDateDebut,
-      dateFin: newDateFin,
-      heureDebut: newHeureDebut,
-      heureFin: newHeureFin,
-      statut: newDateDebut && new Date(newDateDebut) > new Date() ? 'planifie' : 'actif',
-      utilisations: 0,
-      limiteGlobale: parseInt(newLimiteGlobale) || 0,
-      limiteClient: parseInt(newLimiteClient) || 0,
-      segment: newSegment,
-      categories: newCategories,
-      produits: [],
-      revenus: 0,
-      commandes: 0,
-      conversion: 0,
-      auto: newAuto,
+    setSubmitting(true)
+    try {
+      const payload = {
+        code: newCode.trim().toUpperCase(),
+        type: newType,
+        valeur: parseFloat(newValeur) || 0,
+        montantMin: parseFloat(newMontantMin) || 0,
+        dateDebut: showPlanification ? (newDateDebut || null) : null,
+        dateFin: showPlanification ? (newDateFin || null) : null,
+        heureDebut: showPlanification ? (newHeureDebut || null) : null,
+        heureFin: showPlanification ? (newHeureFin || null) : null,
+        limiteGlobale: limiteMode === 'unique' ? 0 : (parseInt(newLimiteGlobale) || 0),
+        limiteClient: limiteMode === 'unique' ? 1 : (parseInt(newLimiteClient) || 0),
+        segment: newSegment || null,
+        categories: newCategories,
+        produits: [],
+        auto: newAuto,
+      }
+      const created = await promotionApi.createCoupon(payload)
+      setCoupons(prev => [created, ...prev])
+      setShowCreate(false)
+      toast.success(`Coupon "${created.code}" créé avec succès !`)
+      refreshStats()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Erreur lors de la création du coupon.')
+    } finally {
+      setSubmitting(false)
     }
-    setCoupons(prev => [coupon, ...prev])
-    setShowCreate(false)
-    toast.success(`Coupon "${coupon.code}" créé avec succès !`)
   }
 
   const toggleCatSelection = (cat) => {
@@ -277,11 +297,65 @@ export default function Promotions() {
     setPage(1)
   }
 
+  /* ── Remise Actions ── */
+  const submitRemise = async () => {
+    if (!remiseType) return toast.error('Le type de remise est obligatoire.')
+    if (!remiseValeur) return toast.error('La valeur est obligatoire.')
+    setSubmitting(true)
+    try {
+      const catObj = categoriesList.indexOf(remiseCategorie) >= 0
+        ? (await categoryApi.getAll()).find(c => (c.nom || c.name) === remiseCategorie)
+        : null
+      const payload = {
+        nom: remiseNom || remiseProduit || 'Remise rapide',
+        type: remiseType,
+        valeur: parseFloat(remiseValeur) || 0,
+        productName: remiseProduit || null,
+        categoryId: catObj?.id || null,
+        prixOriginal: parseFloat(remisePrixOriginal) || 0,
+        dateDebut: remiseDateDebut || null,
+        dateFin: remiseDateFin || null,
+      }
+      const created = await promotionApi.createDiscount(payload)
+      setDiscounts(prev => [created, ...prev])
+      toast.success('Remise appliquée avec succès !')
+      setRemiseNom(''); setRemiseProduit(''); setRemiseValeur(''); setRemiseCategorie(''); setRemisePrixOriginal(''); setRemiseDateDebut(''); setRemiseDateFin('')
+      refreshStats()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Erreur lors de la création de la remise.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const deleteDiscount = async (id) => {
+    try {
+      await promotionApi.deleteDiscount(id)
+      setDiscounts(prev => prev.filter(d => d.id !== id))
+      toast.success('Remise supprimée.')
+      refreshStats()
+    } catch {
+      toast.error('Erreur lors de la suppression.')
+    }
+  }
+
+  const toggleDiscountStatut = async (id) => {
+    try {
+      const updated = await promotionApi.toggleDiscountStatut(id)
+      setDiscounts(prev => prev.map(d => d.id === id ? updated : d))
+    } catch {
+      toast.error('Erreur lors du changement de statut.')
+    }
+  }
+
   /* ── Remise preview ── */
+  const remisePrixOrig = parseFloat(remisePrixOriginal) || 0
   const remiseMontant = remiseType === 'pourcentage'
-    ? (remisePrixOriginal * (parseFloat(remiseValeur) || 0) / 100)
+    ? (remisePrixOrig * (parseFloat(remiseValeur) || 0) / 100)
     : (parseFloat(remiseValeur) || 0)
-  const prixFinal = Math.max(0, remisePrixOriginal - remiseMontant)
+  const prixFinal = Math.max(0, remisePrixOrig - remiseMontant)
+
+  if (loading) return <div className="flex items-center justify-center h-96"><Spinner /></div>
 
   /* ══════════════════════════════════════════════════════════════════════════
      RENDER
@@ -297,7 +371,7 @@ export default function Promotions() {
       {/* ── KPIs ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <KpiCard label="Coupons actifs" value={actifs} sub={`${coupons.length} total`} subColor="text-slate-400" icon="sell" iconBg="bg-badge/10 text-badge" />
-        <KpiCard label="Revenus générés" value={`${totalRevenus.toLocaleString()} €`} sub="+18% ce mois" subColor="text-brand" icon="payments" iconBg="bg-blue-50 text-blue-600" />
+        <KpiCard label="Revenus générés" value={`${totalRevenus.toLocaleString('fr-FR')} DT`} sub={`${stats?.totalCoupons ?? 0} coupons total`} subColor="text-brand" icon="payments" iconBg="bg-blue-50 text-blue-600" />
         <KpiCard label="Taux d'utilisation" value={totalUtilisations} sub="utilisations totales" subColor="text-slate-400" icon="receipt_long" iconBg="bg-amber-50 text-amber-600" />
         <KpiCard label="Conversion moyenne" value={`${avgConversion}%`} sub={avgConversion >= 30 ? 'Excellent' : 'À améliorer'} subColor={avgConversion >= 30 ? 'text-brand' : 'text-amber-600'} icon="trending_up" iconBg="bg-purple-50 text-purple-600" />
       </div>
@@ -315,17 +389,17 @@ export default function Promotions() {
               <div>
                 <p className="text-[10px] font-bold text-brand uppercase tracking-wider">Meilleur coupon</p>
                 <p className="text-sm font-bold text-slate-800 mt-0.5">{bestCoupon.code}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{bestCoupon.conversion}% conversion · {bestCoupon.revenus.toLocaleString()} € revenus</p>
+                <p className="text-xs text-slate-500 mt-0.5">{Math.round(bestCoupon.conversion)}% conversion · {bestCoupon.revenus?.toLocaleString('fr-FR') ?? 0} DT revenus</p>
               </div>
             </div>
           )}
-          {worstCoupon && worstCoupon.id !== bestCoupon?.id && (
+          {worstCoupon && worstCoupon.code !== bestCoupon?.code && (
             <div className="bg-white rounded-lg border border-slate-200 p-4 flex items-start gap-3">
               <div className="p-2 bg-amber-50 rounded-lg"><span className="material-symbols-outlined text-amber-600">warning</span></div>
               <div>
                 <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">À améliorer</p>
                 <p className="text-sm font-bold text-slate-800 mt-0.5">{worstCoupon.code}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{worstCoupon.conversion}% conversion seulement</p>
+                <p className="text-xs text-slate-500 mt-0.5">{Math.round(worstCoupon.conversion)}% conversion seulement</p>
               </div>
             </div>
           )}
@@ -426,15 +500,15 @@ export default function Promotions() {
                         {/* Remise */}
                         <td className="px-6 py-3.5">
                           <span className={`text-sm font-bold ${isInactive ? 'text-slate-400' : 'text-slate-800'}`}>
-                            {c.type === 'pourcentage' ? `${c.valeur}%` : c.type === 'fixe' ? `${c.valeur} €` : c.type === 'livraison' ? 'Gratuite' : c.type === 'bogo' ? '1+1' : `${c.valeur} €`}
+                            {c.type === 'pourcentage' ? `${c.valeur}%` : c.type === 'fixe' ? `${c.valeur} DT` : c.type === 'livraison' ? 'Gratuite' : c.type === 'bogo' ? '1+1' : `${c.valeur} DT`}
                           </span>
-                          {c.montantMin > 0 && <p className="text-[10px] text-slate-400">Min. {c.montantMin} €</p>}
+                          {c.montantMin > 0 && <p className="text-[10px] text-slate-400">Min. {c.montantMin} DT</p>}
                         </td>
 
                         {/* Segment */}
                         <td className="px-6 py-3.5">
-                          <span className="text-xs text-slate-600 font-medium">{segmentOptions.find(s => s.value === c.segment)?.label || c.segment}</span>
-                          {c.categories.length > 0 && <p className="text-[10px] text-slate-400">{c.categories.join(', ')}</p>}
+                          <span className="text-xs text-slate-600 font-medium">{segmentOptions.find(s => s.value === (c.segment || ''))?.label || c.segment || 'Tous les clients'}</span>
+                          {c.categories?.length > 0 && <p className="text-[10px] text-slate-400">{c.categories.join(', ')}</p>}
                         </td>
 
                         {/* Utilisation */}
@@ -459,7 +533,7 @@ export default function Promotions() {
                           {c.conversion > 0 ? (
                             <div className="text-center">
                               <span className={`text-sm font-bold ${c.conversion >= 30 ? 'text-brand' : c.conversion >= 15 ? 'text-amber-600' : 'text-red-500'}`}>{c.conversion}%</span>
-                              <p className="text-[10px] text-slate-400">{c.revenus.toLocaleString()} €</p>
+                              <p className="text-[10px] text-slate-400">{c.revenus.toLocaleString()} DT</p>
                             </div>
                           ) : (
                             <span className="text-[10px] text-slate-300 italic">—</span>
@@ -531,85 +605,176 @@ export default function Promotions() {
 
       {/* ════════════ TAB : Remises sur Produits ════════════ */}
       {tab === 'remise' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Formulaire remise */}
-          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-badge/10 text-badge rounded-xl flex items-center justify-center">
-                <span className="material-symbols-outlined text-2xl">label</span>
-              </div>
-              <div>
-                <h4 className="font-bold text-slate-800 text-lg">Remise Rapide sur Produit</h4>
-                <p className="text-slate-500 text-sm">Appliquez une baisse de prix à un article ou une catégorie.</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2 space-y-2">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Rechercher un produit</label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
-                  <input value={remiseProduit} onChange={e => setRemiseProduit(e.target.value)} placeholder="Nom du produit ou SKU..."
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Formulaire remise */}
+            <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-badge/10 text-badge rounded-xl flex items-center justify-center">
+                  <span className="material-symbols-outlined text-2xl">label</span>
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-800 text-lg">Remise Rapide sur Produit</h4>
+                  <p className="text-slate-500 text-sm">Appliquez une baisse de prix à un article ou une catégorie.</p>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Appliquer à une catégorie</label>
-                <CustomSelect value={remiseCategorie} onChange={setRemiseCategorie} options={['', ...categorieOptions]} placeholder="Catégorie entière (optionnel)" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Nom de la remise</label>
+                  <input value={remiseNom} onChange={e => setRemiseNom(e.target.value)} placeholder="Ex: Promo été..."
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Produit (optionnel)</label>
+                  <div className="relative">
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+                    <input value={remiseProduit} onChange={e => setRemiseProduit(e.target.value)} placeholder="Nom du produit ou SKU..."
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Appliquer à une catégorie</label>
+                  <CustomSelect value={remiseCategorie} onChange={setRemiseCategorie} options={['', ...categoriesList]} placeholder="Catégorie entière (optionnel)" />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Type de remise</label>
+                  <CustomSelect value={remiseType} onChange={setRemiseType} options={[{ value: 'pourcentage', label: 'Pourcentage (%)' }, { value: 'fixe', label: 'Montant fixe (DT)' }]} />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Valeur</label>
+                  <input type="number" value={remiseValeur} onChange={e => setRemiseValeur(e.target.value)} placeholder="Ex: 15"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Prix original (DT)</label>
+                  <input type="number" value={remisePrixOriginal} onChange={e => setRemisePrixOriginal(e.target.value)} placeholder="Ex: 100"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Date début</label>
+                  <input type="date" value={remiseDateDebut} onChange={e => setRemiseDateDebut(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Date fin</label>
+                  <input type="date" value={remiseDateFin} onChange={e => setRemiseDateFin(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Type de remise</label>
-                <CustomSelect value={remiseType} onChange={setRemiseType} options={[{ value: 'pourcentage', label: 'Pourcentage (%)' }, { value: 'fixe', label: 'Montant fixe (€)' }]} />
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Valeur</label>
-                <input type="number" value={remiseValeur} onChange={e => setRemiseValeur(e.target.value)} placeholder="Ex: 15"
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
-              </div>
+              <button onClick={submitRemise} disabled={submitting}
+                className="w-full bg-slate-900 text-white py-3 rounded-lg font-bold text-sm hover:bg-slate-800 transition-all disabled:opacity-50">
+                {submitting ? 'Application en cours...' : 'Appliquer la remise immédiate'}
+              </button>
             </div>
 
-            <button onClick={() => toast.success('Remise appliquée avec succès !')}
-              className="w-full bg-slate-900 text-white py-3 rounded-lg font-bold text-sm hover:bg-slate-800 transition-all">
-              Appliquer la remise immédiate
-            </button>
+            {/* Prévisualisation */}
+            <div className="space-y-6">
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <h4 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-brand">preview</span>
+                  Prévisualisation prix
+                </h4>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-500">Prix original</span>
+                    <span className="text-sm font-bold text-slate-800">{remisePrixOrig.toFixed(2)} DT</span>
+                  </div>
+                  <div className="flex items-center justify-between text-red-500">
+                    <span className="text-sm">Remise {remiseType === 'pourcentage' ? `(${remiseValeur || 0}%)` : `(${remiseValeur || 0} DT)`}</span>
+                    <span className="text-sm font-bold">-{remiseMontant.toFixed(2)} DT</span>
+                  </div>
+                  <div className="border-t border-slate-200 pt-3 flex items-center justify-between">
+                    <span className="text-sm font-bold text-slate-800">Prix final</span>
+                    <span className="text-xl font-bold text-brand">{prixFinal.toFixed(2)} DT</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-brand/5 border border-brand/10 p-5 rounded-xl text-center">
+                <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mx-auto mb-3 text-brand">
+                  <span className="material-symbols-outlined text-2xl">lightbulb</span>
+                </div>
+                <h4 className="font-bold text-slate-800 text-sm mb-2">Astuce</h4>
+                <p className="text-slate-600 text-xs leading-relaxed">
+                  Remises entre 15-25% → meilleur ratio marge/conversion. Au-delà de 30%, l'impact sur la marge dépasse le gain de volume.
+                </p>
+              </div>
+            </div>
           </div>
 
-          {/* Prévisualisation */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-              <h4 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
-                <span className="material-symbols-outlined text-brand">preview</span>
-                Prévisualisation prix
-              </h4>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-500">Prix original</span>
-                  <span className="text-sm font-bold text-slate-800">{remisePrixOriginal.toFixed(2)} €</span>
-                </div>
-                <div className="flex items-center justify-between text-red-500">
-                  <span className="text-sm">Remise {remiseType === 'pourcentage' ? `(${remiseValeur || 0}%)` : `(${remiseValeur || 0} €)`}</span>
-                  <span className="text-sm font-bold">-{remiseMontant.toFixed(2)} €</span>
-                </div>
-                <div className="border-t border-slate-200 pt-3 flex items-center justify-between">
-                  <span className="text-sm font-bold text-slate-800">Prix final</span>
-                  <span className="text-xl font-bold text-brand">{prixFinal.toFixed(2)} €</span>
-                </div>
+          {/* ── Liste des remises existantes ── */}
+          {discounts.length > 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-brand">list</span>
+                  Remises actives ({discounts.length})
+                </h4>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider font-bold">
+                    <tr>
+                      <th className="px-6 py-3">Nom</th>
+                      <th className="px-6 py-3">Type</th>
+                      <th className="px-6 py-3">Valeur</th>
+                      <th className="px-6 py-3">Produit / Catégorie</th>
+                      <th className="px-6 py-3">Prix</th>
+                      <th className="px-6 py-3 text-center">Statut</th>
+                      <th className="px-6 py-3">Expiration</th>
+                      <th className="px-6 py-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {discounts.map(d => (
+                      <tr key={d.id} className="hover:bg-slate-50/50 transition-colors group">
+                        <td className="px-6 py-3.5 text-sm font-bold text-slate-800">{d.nom || '—'}</td>
+                        <td className="px-6 py-3.5">
+                          <span className="text-xs font-bold text-slate-600 uppercase">{d.type === 'pourcentage' ? 'Pourcentage' : 'Fixe'}</span>
+                        </td>
+                        <td className="px-6 py-3.5 text-sm font-bold text-slate-800">
+                          {d.type === 'pourcentage' ? `${d.valeur}%` : `${d.valeur} DT`}
+                        </td>
+                        <td className="px-6 py-3.5 text-sm text-slate-600">
+                          {d.productName || d.categoryName || '—'}
+                        </td>
+                        <td className="px-6 py-3.5">
+                          {d.prixOriginal > 0 ? (
+                            <div>
+                              <span className="text-xs text-slate-400 line-through">{d.prixOriginal.toFixed(2)} DT</span>
+                              <span className="text-sm font-bold text-brand ml-2">{d.prixFinal?.toFixed(2)} DT</span>
+                            </div>
+                          ) : <span className="text-slate-300">—</span>}
+                        </td>
+                        <td className="px-6 py-3.5 text-center">
+                          <button onClick={() => toggleDiscountStatut(d.id)}>
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold font-badge uppercase tracking-wider ${(statutConfig[d.statut] || statutConfig.actif).bg}`}>
+                              {(statutConfig[d.statut] || statutConfig.actif).label}
+                            </span>
+                          </button>
+                        </td>
+                        <td className="px-6 py-3.5 text-sm text-slate-500">{d.dateFin || '—'}</td>
+                        <td className="px-6 py-3.5 text-right">
+                          <button onClick={() => deleteDiscount(d.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all opacity-0 group-hover:opacity-100" title="Supprimer">
+                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
-
-            <div className="bg-brand/5 border border-brand/10 p-5 rounded-xl text-center">
-              <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mx-auto mb-3 text-brand">
-                <span className="material-symbols-outlined text-2xl">lightbulb</span>
-              </div>
-              <h4 className="font-bold text-slate-800 text-sm mb-2">Astuce</h4>
-              <p className="text-slate-600 text-xs leading-relaxed">
-                Remises entre 15-25% → meilleur ratio marge/conversion. Au-delà de 30%, l'impact sur la marge dépasse le gain de volume.
-              </p>
-            </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -625,9 +790,9 @@ export default function Promotions() {
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
                     <h4 className="font-bold text-slate-800 text-sm">{t.label}</h4>
-                    <button onClick={() => toast.success(`Trigger "${t.label}" activé !`)}
+                    <button onClick={() => { setNewAuto(true); setNewCode(genCode()); setNewType('pourcentage'); setNewValeur('10'); setShowCreate(true) }}
                       className="px-3 py-1 bg-badge/10 text-badge text-[10px] font-bold rounded-lg hover:bg-badge/20 transition-colors uppercase">
-                      Activer
+                      Créer
                     </button>
                   </div>
                   <p className="text-xs text-slate-500 mt-1">{t.desc}</p>
@@ -646,11 +811,11 @@ export default function Promotions() {
                 <div key={c.id} className="flex items-center justify-between bg-slate-50 rounded-lg p-4 border border-slate-100">
                   <div className="flex items-center gap-3">
                     <span className="px-3 py-1 bg-brand/5 text-brand font-bold text-sm rounded-lg border border-brand/10">{c.code}</span>
-                    <span className="text-xs text-slate-500">{c.type === 'pourcentage' ? `${c.valeur}%` : `${c.valeur} €`} · {segmentOptions.find(s => s.value === c.segment)?.label}</span>
+                    <span className="text-xs text-slate-500">{c.type === 'pourcentage' ? `${c.valeur}%` : `${c.valeur} DT`} · {segmentOptions.find(s => s.value === (c.segment || ''))?.label || 'Tous les clients'}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-xs font-bold text-brand">{c.utilisations} utilisations</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold font-badge ${statutConfig[c.statut]?.bg}`}>{statutConfig[c.statut]?.label}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold font-badge ${(statutConfig[c.statut] || statutConfig.actif).bg}`}>{(statutConfig[c.statut] || statutConfig.actif).label}</span>
                   </div>
                 </div>
               ))}
@@ -663,8 +828,8 @@ export default function Promotions() {
       )}
 
       {/* ══════════ MODAL : Créer coupon ══════════ */}
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowCreate(false)}>
+      {showCreate && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowCreate(false)}>
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-5" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold text-slate-800">Créer un coupon</h3>
@@ -676,7 +841,7 @@ export default function Promotions() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Code */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Code du coupon</label>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Code du coupon <InfoTip text="Code unique que le client saisit lors du paiement pour bénéficier de la réduction." /></label>
                 <div className="flex gap-2">
                   <input type="text" value={newCode} onChange={e => setNewCode(e.target.value.toUpperCase())} placeholder="Ex: PROMO20"
                     className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none font-bold uppercase" />
@@ -688,14 +853,14 @@ export default function Promotions() {
 
               {/* Type */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Type de coupon</label>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Type de coupon <InfoTip text="Détermine le type de réduction : pourcentage, montant fixe, livraison gratuite, cadeau ou BOGO (1 acheté = 1 offert)." /></label>
                 <CustomSelect value={newType} onChange={setNewType} options={typeOptions} />
               </div>
 
               {/* Valeur */}
               {(newType === 'pourcentage' || newType === 'fixe' || newType === 'cadeau') && (
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Valeur {newType === 'pourcentage' ? '(%)' : '(€)'}</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Valeur {newType === 'pourcentage' ? '(%)' : '(DT)'} <InfoTip text="Montant de la réduction à appliquer. En pourcentage (%) ou en dinars (DT) selon le type choisi." /></label>
                   <input type="number" value={newValeur} onChange={e => setNewValeur(e.target.value)} placeholder="Ex: 15"
                     className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
                 </div>
@@ -703,14 +868,14 @@ export default function Promotions() {
 
               {/* Montant minimum */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Montant minimum (€)</label>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Montant minimum (DT) <InfoTip text="Le client doit atteindre ce montant dans son panier pour utiliser le coupon. Mettez 0 pour aucun minimum requis." /></label>
                 <input type="number" value={newMontantMin} onChange={e => setNewMontantMin(e.target.value)} placeholder="0 = pas de minimum"
                   className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
               </div>
 
               {/* Segment */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Segment client</label>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Segment client <InfoTip text="Cible un groupe spécifique de clients. Sélectionnez 'Tous les clients' pour un coupon accessible à tout le monde." /></label>
                 <CustomSelect value={newSegment} onChange={setNewSegment} options={segmentOptions} />
               </div>
 
@@ -721,60 +886,84 @@ export default function Promotions() {
                     className={`relative w-11 h-6 rounded-full transition-colors ${newAuto ? 'bg-brand' : 'bg-slate-300'}`}>
                     <span className={`absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow transition-transform ${newAuto ? 'translate-x-5' : ''}`} />
                   </button>
-                  <span className="text-sm font-medium text-slate-700">Coupon automatique</span>
+                  <span className="text-sm font-medium text-slate-700">Coupon automatique <InfoTip text="Si activé, le coupon s'applique automatiquement au panier du client sans qu'il ait besoin de saisir un code." /></span>
                 </label>
               </div>
             </div>
 
             {/* Planification */}
             <div className="border-t border-slate-100 pt-5">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Planification</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Planification <InfoTip text="Définissez la période de validité du coupon. Sans dates, le coupon est actif immédiatement et sans limite de temps." /></p>
+                <button type="button" onClick={() => setShowPlanification(!showPlanification)}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${showPlanification ? 'bg-brand' : 'bg-slate-300'}`}>
+                  <span className={`absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow transition-transform ${showPlanification ? 'translate-x-5' : ''}`} />
+                </button>
+              </div>
+              {showPlanification ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">Date début</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Date début <InfoTip text="Date à partir de laquelle le coupon devient actif et utilisable." /></label>
                   <input type="date" value={newDateDebut} onChange={e => setNewDateDebut(e.target.value)}
                     className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">Heure début</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Heure début <InfoTip text="Heure précise d'activation du coupon le jour de début." /></label>
                   <input type="time" value={newHeureDebut} onChange={e => setNewHeureDebut(e.target.value)}
                     className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">Date fin</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Date fin <InfoTip text="Date à laquelle le coupon expire et ne peut plus être utilisé." /></label>
                   <input type="date" value={newDateFin} onChange={e => setNewDateFin(e.target.value)}
                     className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">Heure fin</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Heure fin <InfoTip text="Heure précise d'expiration du coupon le jour de fin." /></label>
                   <input type="time" value={newHeureFin} onChange={e => setNewHeureFin(e.target.value)}
                     className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
                 </div>
               </div>
+              ) : (
+                <p className="text-xs text-slate-400 italic">Aucune planification — coupon actif immédiatement</p>
+              )}
             </div>
 
             {/* Limites */}
             <div className="border-t border-slate-100 pt-5">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Limites d'utilisation</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">Limite globale (0 = illimité)</label>
-                  <input type="number" value={newLimiteGlobale} onChange={e => setNewLimiteGlobale(e.target.value)} placeholder="Ex: 100"
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">Limite par client (0 = illimité)</label>
-                  <input type="number" value={newLimiteClient} onChange={e => setNewLimiteClient(e.target.value)} placeholder="Ex: 1"
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
-                </div>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Limites d'utilisation <InfoTip text="Contrôlez combien de fois ce coupon peut être utilisé au total et par client individuel." /></p>
+              <div className="flex gap-2 mb-4">
+                <button type="button" onClick={() => setLimiteMode('unique')}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all ${limiteMode === 'unique' ? 'border-brand bg-brand/10 text-brand' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}>
+                  Utilisation unique
+                </button>
+                <button type="button" onClick={() => setLimiteMode('multiple')}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all ${limiteMode === 'multiple' ? 'border-brand bg-brand/10 text-brand' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}>
+                  Utilisation multiple
+                </button>
               </div>
+              {limiteMode === 'unique' ? (
+                <p className="text-xs text-slate-400 italic">1 utilisation par client — limites définies automatiquement</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase">Limite globale (0 = illimité) <InfoTip text="Nombre total d'utilisations autorisées pour ce coupon. Mettez 0 pour des utilisations illimitées." /></label>
+                    <input type="number" value={newLimiteGlobale} onChange={e => setNewLimiteGlobale(e.target.value)} placeholder="Ex: 100"
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase">Limite par client (0 = illimité) <InfoTip text="Nombre maximum de fois qu'un même client peut utiliser ce coupon. Mettez 0 pour illimité." /></label>
+                    <input type="number" value={newLimiteClient} onChange={e => setNewLimiteClient(e.target.value)} placeholder="Ex: 1"
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Conditions — Catégories */}
             <div className="border-t border-slate-100 pt-5">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Produits ciblés (optionnel)</p>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Produits ciblés (optionnel) <InfoTip text="Restreignez le coupon à certaines catégories. Si aucune n'est sélectionnée, le coupon s'applique à tous les produits." /></p>
               <div className="flex flex-wrap gap-2">
-                {categorieOptions.map(cat => (
+                {categoriesList.map(cat => (
                   <button key={cat} type="button" onClick={() => toggleCatSelection(cat)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${newCategories.includes(cat) ? 'border-badge bg-badge/10 text-badge' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}>
                     {cat}
@@ -786,20 +975,23 @@ export default function Promotions() {
             {/* Submit */}
             <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
               <button onClick={() => setShowCreate(false)} className="px-4 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">Annuler</button>
-              <button onClick={submitCreate} className="px-6 py-2.5 text-sm font-semibold text-white bg-btn rounded-lg hover:bg-btn-dark transition-colors shadow-md">Créer le coupon</button>
+              <button onClick={submitCreate} disabled={submitting} className="px-6 py-2.5 text-sm font-semibold text-white bg-btn rounded-lg hover:bg-btn-dark transition-colors shadow-md disabled:opacity-50">
+                {submitting ? 'Création...' : 'Créer le coupon'}
+              </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ══════════ MODAL : Détail & Performances ══════════ */}
-      {detailCoupon && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setDetailCoupon(null)}>
+      {detailCoupon && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setDetailCoupon(null)}>
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 space-y-5" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="px-4 py-1.5 bg-brand/5 text-brand font-bold text-lg rounded-lg border border-brand/10">{detailCoupon.code}</span>
-                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold font-badge ${statutConfig[detailCoupon.statut]?.bg}`}>{statutConfig[detailCoupon.statut]?.label}</span>
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold font-badge ${(statutConfig[detailCoupon.statut] || statutConfig.actif).bg}`}>{(statutConfig[detailCoupon.statut] || statutConfig.actif).label}</span>
               </div>
               <button onClick={() => setDetailCoupon(null)} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
                 <span className="material-symbols-outlined text-slate-400">close</span>
@@ -815,16 +1007,16 @@ export default function Promotions() {
               <div className="bg-slate-50 rounded-lg p-3">
                 <p className="text-[10px] font-bold text-slate-400 uppercase">Valeur</p>
                 <p className="text-sm font-bold text-slate-700 mt-1">
-                  {detailCoupon.type === 'pourcentage' ? `${detailCoupon.valeur}%` : detailCoupon.type === 'fixe' ? `${detailCoupon.valeur} €` : detailCoupon.type === 'livraison' ? 'Gratuite' : detailCoupon.type === 'bogo' ? '1+1' : `${detailCoupon.valeur} €`}
+                  {detailCoupon.type === 'pourcentage' ? `${detailCoupon.valeur}%` : detailCoupon.type === 'fixe' ? `${detailCoupon.valeur} DT` : detailCoupon.type === 'livraison' ? 'Gratuite' : detailCoupon.type === 'bogo' ? '1+1' : `${detailCoupon.valeur} DT`}
                 </p>
               </div>
               <div className="bg-slate-50 rounded-lg p-3">
                 <p className="text-[10px] font-bold text-slate-400 uppercase">Segment</p>
-                <p className="text-sm font-bold text-slate-700 mt-1">{segmentOptions.find(s => s.value === detailCoupon.segment)?.label}</p>
+                <p className="text-sm font-bold text-slate-700 mt-1">{segmentOptions.find(s => s.value === (detailCoupon.segment || ''))?.label || 'Tous les clients'}</p>
               </div>
               <div className="bg-slate-50 rounded-lg p-3">
                 <p className="text-[10px] font-bold text-slate-400 uppercase">Min. commande</p>
-                <p className="text-sm font-bold text-slate-700 mt-1">{detailCoupon.montantMin > 0 ? `${detailCoupon.montantMin} €` : 'Aucun'}</p>
+                <p className="text-sm font-bold text-slate-700 mt-1">{detailCoupon.montantMin > 0 ? `${detailCoupon.montantMin} DT` : 'Aucun'}</p>
               </div>
             </div>
 
@@ -833,7 +1025,7 @@ export default function Promotions() {
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Performances</p>
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center bg-brand/5 rounded-lg p-4">
-                  <p className="text-2xl font-bold text-brand">{detailCoupon.revenus.toLocaleString()} €</p>
+                  <p className="text-2xl font-bold text-brand">{detailCoupon.revenus.toLocaleString()} DT</p>
                   <p className="text-[10px] text-brand font-bold uppercase mt-1">Revenus générés</p>
                 </div>
                 <div className="text-center bg-blue-50 rounded-lg p-4">
@@ -861,7 +1053,8 @@ export default function Promotions() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

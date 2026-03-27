@@ -4,9 +4,9 @@ import PageHeader from '../components/ui/PageHeader'
 
 // ── Mock Data ──────────────────────────────────────────────────────────────────
 const paiements = [
-  { id: '#WP-89231', date: '12 Oct 2024', montant: '299,00 €', statut: 'Payé' },
-  { id: '#WP-88412', date: '12 Sep 2023', montant: '299,00 €', statut: 'Payé' },
-  { id: '#WP-87002', date: '12 Sep 2022', montant: '249,00 €', statut: 'Payé' },
+  { id: '#WP-89231', date: '12 Oct 2024', montant: '299,00 DT', statut: 'Payé' },
+  { id: '#WP-88412', date: '12 Sep 2023', montant: '299,00 DT', statut: 'Payé' },
+  { id: '#WP-87002', date: '12 Sep 2022', montant: '249,00 DT', statut: 'Payé' },
 ]
 
 const plans = [
@@ -157,7 +157,7 @@ export default function CompteHebergement() {
 
                   {/* Price */}
                   <div className="mb-5">
-                    <span className="text-3xl font-extrabold text-slate-900">{plan.prix} €</span>
+                    <span className="text-3xl font-extrabold text-slate-900">{plan.prix} DT</span>
                     <span className="text-sm text-slate-400 font-medium">{plan.periode}</span>
                   </div>
 

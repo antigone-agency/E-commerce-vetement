@@ -30,7 +30,7 @@ export default function Cart() {
   const taxes = Math.round(subtotal * 0.2)
   const total = subtotal
 
-  const fmt = (n) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' €'
+  const fmt = (n) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' DT'
 
   return (
     <main className="pt-28 pb-16 px-6 md:px-12 max-w-[1400px] mx-auto min-h-screen">

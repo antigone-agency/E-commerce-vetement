@@ -25,7 +25,7 @@ const kpiData = [
   },
   {
     label: 'Remboursements Complétés',
-    value: '1 240 €',
+    value: '1 240 DT',
     sub: 'Total 30j',
     subColor: 'text-slate-400',
     icon: 'payments',
@@ -55,7 +55,7 @@ const mockRetours = [
     statutBg: 'bg-amber-100 text-amber-700',
     panelStatutBg: 'bg-amber-100 text-amber-700',
     panelStatut: 'Attente',
-    montant: '89.90 €',
+    montant: '89.90 DT',
     raison: 'Taille trop grande',
     commentaire: '"La veste est superbe mais la taille L taille vraiment grand, je flotte dedans. Je souhaiterais un échange contre une taille M ou un remboursement."',
   },
@@ -72,7 +72,7 @@ const mockRetours = [
     statutBg: 'bg-blue-100 text-blue-700',
     panelStatutBg: 'bg-blue-100 text-blue-700',
     panelStatut: 'Inspecté',
-    montant: '54.00 €',
+    montant: '54.00 DT',
     raison: 'Défaut de fabrication',
     commentaire: '"La couture du genou droit s\'est décousue après deux jours d\'utilisation. Le produit est défectueux."',
   },
@@ -89,7 +89,7 @@ const mockRetours = [
     statutBg: 'bg-badge/10 text-badge',
     panelStatutBg: 'bg-badge/10 text-badge',
     panelStatut: 'Remboursé',
-    montant: '15.50 €',
+    montant: '15.50 DT',
     raison: 'Taille incorrecte',
     commentaire: '"J\'ai commandé la taille M mais j\'ai reçu du S. J\'aimerais un échange ou un remboursement."',
   },
@@ -106,7 +106,7 @@ const mockRetours = [
     statutBg: 'bg-slate-100 text-slate-600',
     panelStatutBg: 'bg-slate-100 text-slate-600',
     panelStatut: 'Fermé',
-    montant: '129.00 €',
+    montant: '129.00 DT',
     raison: 'Non conforme à la description',
     commentaire: '"L\'embout de protection n\'est pas visible comme sur les photos du site. Le produit livré ne correspond pas à ce qui est annoncé."',
   },
@@ -117,7 +117,7 @@ const raisonOptions = ['Toutes les raisons', 'Taille incorrecte', 'Défaut', 'No
 
 const modeOptions = ['Mode original', 'Virement bancaire', 'Avoir boutique', 'Carte cadeau']
 const eligibiliteOptions = ['Neufs avec étiquettes', 'Neufs sans étiquettes', 'Occasion acceptable', 'Tout état']
-const fraisOptions = ['Gratuit (France métro)', 'À la charge du client', 'Forfait 5 €', 'Selon transporteur']
+const fraisOptions = ['Gratuit (Tunisie)', 'À la charge du client', 'Forfait 5 DT', 'Selon transporteur']
 
 export default function Retours() {
   const navigate = useNavigate()

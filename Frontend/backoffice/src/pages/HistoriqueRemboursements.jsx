@@ -27,7 +27,7 @@ const enCours = remboursements.filter((r) => r.statut === 'En cours')
 const kpiData = [
   {
     label: 'Total Remboursé',
-    value: totalCompletes.toFixed(2).replace('.', ',') + ' €',
+    value: totalCompletes.toFixed(2).replace('.', ',') + ' DT',
     sub: 'Complétés',
     subColor: 'text-slate-400',
     icon: 'payments',
@@ -43,7 +43,7 @@ const kpiData = [
   },
   {
     label: 'Montant Moyen',
-    value: (total / remboursements.length).toFixed(2).replace('.', ',') + ' €',
+    value: (total / remboursements.length).toFixed(2).replace('.', ',') + ' DT',
     sub: 'par remboursement',
     subColor: 'text-slate-400',
     icon: 'calculate',
@@ -51,7 +51,7 @@ const kpiData = [
   },
   {
     label: 'En Cours de Traitement',
-    value: enCours.reduce((acc, r) => acc + r.montant, 0).toFixed(2).replace('.', ',') + ' €',
+    value: enCours.reduce((acc, r) => acc + r.montant, 0).toFixed(2).replace('.', ',') + ' DT',
     sub: `${enCours.length} demandes`,
     subColor: 'text-amber-500',
     icon: 'hourglass_top',
@@ -149,7 +149,7 @@ export default function HistoriqueRemboursements() {
                   <td className="px-5 py-4 font-bold text-brand text-sm whitespace-nowrap">{r.id}</td>
                   <td className="px-5 py-4 text-slate-500 text-sm whitespace-nowrap">{r.retour}</td>
                   <td className="px-5 py-4 font-semibold text-slate-800 text-sm whitespace-nowrap">{r.client}</td>
-                  <td className="px-5 py-4 font-bold text-slate-900 text-sm whitespace-nowrap">{r.montant.toFixed(2).replace('.', ',')} €</td>
+                  <td className="px-5 py-4 font-bold text-slate-900 text-sm whitespace-nowrap">{r.montant.toFixed(2).replace('.', ',')} DT</td>
                   <td className="px-5 py-4 text-slate-500 text-sm whitespace-nowrap">{r.date}</td>
                   <td className="px-5 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center gap-1 text-xs font-medium ${
@@ -181,7 +181,7 @@ export default function HistoriqueRemboursements() {
         {/* Table Footer */}
         <div className="px-5 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
           <span className="text-[11px] font-bold text-slate-400">
-            {filtered.length} résultat{filtered.length > 1 ? 's' : ''} — Total affiché : <span className="text-slate-700">{filteredTotal.toFixed(2).replace('.', ',')} €</span>
+            {filtered.length} résultat{filtered.length > 1 ? 's' : ''} — Total affiché : <span className="text-slate-700">{filteredTotal.toFixed(2).replace('.', ',')} DT</span>
           </span>
           <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400">
             <button className="p-1 hover:text-brand transition-colors">
