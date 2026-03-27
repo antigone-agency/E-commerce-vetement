@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import apiClient from '../api/apiClient'
+import apiClient, { scheduleAutoLogout } from '../api/apiClient'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -18,6 +18,7 @@ export default function Login() {
       localStorage.setItem('accessToken', data.accessToken)
       localStorage.setItem('refreshToken', data.refreshToken)
       localStorage.setItem('user', JSON.stringify(data.user))
+      scheduleAutoLogout()
       navigate('/dashboard')
     } catch (err) {
       setError(err.response?.data?.message || 'E-mail ou mot de passe incorrect.')

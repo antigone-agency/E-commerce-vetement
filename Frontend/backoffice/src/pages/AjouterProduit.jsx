@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import CustomSelect from '../components/ui/CustomSelect'
+import PageHeader from '../components/ui/PageHeader'
 
 // ── Initial variant rows ───────────────────────────────────────────────────────
 const initialVariants = [
@@ -162,23 +163,12 @@ function AjouterProduit() {
   const hasPromo = promoActive && parseFloat(promoPrice) > 0 && parseFloat(promoPrice) < parseFloat(salePrice)
 
   return (
-    <div className="flex-1 overflow-y-auto p-8">
-      <div className="max-w-[1400px] mx-auto space-y-8">
+    <div className="p-6 space-y-6 max-w-[1600px] mx-auto w-full">
 
         {/* ── Page title ── */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">Nouveau produit</h2>
-            <p className="text-slate-500 text-sm mt-1">Remplissez les informations pour ajouter un produit au catalogue.</p>
-          </div>
-          <button
-            onClick={() => navigate('/produits')}
-            className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors"
-          >
-            <span className="material-symbols-outlined text-lg">arrow_back</span>
-            Retour aux produits
-          </button>
-        </div>
+        <PageHeader title="Nouveau produit" subtitle="Remplissez les informations pour ajouter un produit au catalogue.">
+          <PageHeader.SecondaryBtn icon="arrow_back" onClick={() => navigate('/produits')}>Retour</PageHeader.SecondaryBtn>
+        </PageHeader>
 
         <div className="grid grid-cols-12 gap-8">
 
@@ -695,7 +685,6 @@ function AjouterProduit() {
           </div>
         </div>
 
-      </div>
     </div>
   )
 }

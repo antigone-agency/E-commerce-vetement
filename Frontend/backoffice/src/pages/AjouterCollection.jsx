@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import CustomSelect from '../components/ui/CustomSelect'
+import PageHeader from '../components/ui/PageHeader'
 import { collectionApi } from '../api/collectionApi'
 import { categoryApi } from '../api/categoryApi'
 
@@ -203,7 +204,7 @@ export default function AjouterCollection() {
 
   // ── Render ───────────────────────────────────────────────────────────
   return (
-    <div className="p-6 max-w-[1600px] mx-auto w-full">
+    <div className="p-6 space-y-6 max-w-[1600px] mx-auto w-full">
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
 

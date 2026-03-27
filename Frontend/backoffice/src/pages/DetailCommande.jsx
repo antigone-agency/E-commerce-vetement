@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'react-toastify'
+import PageHeader from '../components/ui/PageHeader'
 
 // ── Mock Data ──────────────────────────────────────────────────────────────────
 const mockOrders = {
@@ -193,72 +194,33 @@ export default function DetailCommande() {
   const currentStatusBg = statusColors[statut] || order.statutBg
 
   return (
-    <div className="p-6 lg:p-8 max-w-[1600px] mx-auto w-full space-y-8">
+    <div className="p-6 space-y-6 max-w-[1600px] mx-auto w-full">
 
       {/* ── Page Header ── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold text-slate-900">Détails de la Commande</h1>
-            <span className={`px-3 py-1 rounded-full text-[10px] font-black font-badge uppercase tracking-widest ${currentStatusBg}`}>
-              {statut}
-            </span>
-          </div>
-          <p className="text-slate-500 font-medium">
-            ID de commande : <span className="font-mono text-brand font-bold">{order.id}</span>
-            <span className="mx-2 text-slate-300">•</span>
-            <span className="text-slate-400">{order.date}</span>
-          </p>
+      <PageHeader title="Détails de la Commande" subtitle={`Commande ${order.id} • ${order.date}`}>
+        <PageHeader.SecondaryBtn icon="arrow_back" onClick={() => navigate('/commandes')}>Retour</PageHeader.SecondaryBtn>
+        <div className="relative">
+          <PageHeader.SecondaryBtn icon="sync" onClick={() => setShowStatusMenu(!showStatusMenu)}>Changer statut</PageHeader.SecondaryBtn>
+          {showStatusMenu && (
+            <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 z-20 py-2">
+              {statusFlow.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => handleChangeStatut(s)}
+                  className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors ${
+                    statut === s ? 'font-bold text-brand' : 'text-slate-600'
+                  }`}
+                >
+                  {statut === s && <span className="material-symbols-outlined text-sm mr-2 align-middle">check</span>}
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => navigate('/commandes')}
-            className="px-4 py-2.5 bg-slate-100 text-slate-600 font-semibold text-sm hover:bg-slate-200 transition-colors rounded-xl flex items-center gap-2"
-          >
-            <span className="material-symbols-outlined text-lg">arrow_back</span>
-            Retour
-          </button>
-          <div className="relative">
-            <button
-              onClick={() => setShowStatusMenu(!showStatusMenu)}
-              className="px-4 py-2.5 bg-slate-100 text-slate-700 font-bold text-sm hover:bg-slate-200 transition-colors rounded-xl border border-slate-200 flex items-center gap-2"
-            >
-              <span className="material-symbols-outlined text-lg">sync</span>
-              Changer statut
-            </button>
-            {showStatusMenu && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 z-20 py-2">
-                {statusFlow.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => handleChangeStatut(s)}
-                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors ${
-                      statut === s ? 'font-bold text-brand' : 'text-slate-600'
-                    }`}
-                  >
-                    {statut === s && <span className="material-symbols-outlined text-sm mr-2 align-middle">check</span>}
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <button
-            onClick={() => toast.info('Facture PDF en cours de génération...')}
-            className="px-4 py-2.5 bg-slate-100 text-slate-700 font-bold text-sm hover:bg-slate-200 transition-colors rounded-xl border border-slate-200 flex items-center gap-2"
-          >
-            <span className="material-symbols-outlined text-lg">receipt_long</span>
-            Facture
-          </button>
-          <button
-            onClick={() => toast.info('Ouverture de la messagerie...')}
-            className="px-5 py-2.5 bg-brand text-white font-bold text-sm hover:bg-brand-dark transition-all rounded-xl shadow-lg shadow-brand/20 flex items-center gap-2"
-          >
-            <span className="material-symbols-outlined text-lg">chat</span>
-            Contacter client
-          </button>
-        </div>
-      </div>
+        <PageHeader.SecondaryBtn icon="receipt_long" onClick={() => toast.info('Facture PDF en cours de génération...')}>Facture</PageHeader.SecondaryBtn>
+        <PageHeader.PrimaryBtn icon="chat" onClick={() => toast.info('Ouverture de la messagerie...')}>Contacter client</PageHeader.PrimaryBtn>
+      </PageHeader>
 
       {/* ── Bento Grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

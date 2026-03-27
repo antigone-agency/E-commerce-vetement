@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { scheduleAutoLogout } from '../api/apiClient'
 
 export default function AuthCallback() {
   const navigate = useNavigate()
@@ -14,6 +15,7 @@ export default function AuthCallback() {
       localStorage.setItem('accessToken', accessToken)
       localStorage.setItem('refreshToken', refreshToken)
       if (user) localStorage.setItem('user', user)
+      scheduleAutoLogout()
       navigate('/dashboard', { replace: true })
     } else {
       window.location.href = 'http://localhost:3001/login?redirect=backoffice'

@@ -285,19 +285,18 @@ export default function Collections() {
       </div>
 
       {/* Filters */}
-      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Search */}
-          <div className="flex-1 min-w-[240px] relative">
-            <span className="absolute inset-y-0 left-3 flex items-center text-slate-400">
-              <span className="material-symbols-outlined text-lg">search</span>
+      <div className="bg-white p-5 rounded-custom border border-slate-200 shadow-sm">
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="relative flex-1">
+            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+              <span className="material-symbols-outlined text-xl">search</span>
             </span>
             <input
+              type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand/20"
               placeholder="Rechercher une collection..."
-              type="text"
+              className="block w-full pl-11 pr-4 py-2.5 border border-slate-200 bg-slate-50/50 rounded-custom text-sm focus:ring-brand focus:border-brand transition-all placeholder:text-slate-400 outline-none"
             />
           </div>
 
@@ -306,7 +305,7 @@ export default function Collections() {
           <CustomSelect value={filterVisibility} onChange={setFilterVisibility} options={visibilityOptions} size="sm" />
 
           {/* Période button */}
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-100 transition-all">
+          <button className="flex items-center gap-2 px-4 py-2.5 border border-slate-200 rounded-custom text-sm font-medium text-slate-700 hover:bg-slate-50 transition-all">
             <span className="material-symbols-outlined text-lg">calendar_month</span>
             Période: Toutes
           </button>
@@ -314,12 +313,12 @@ export default function Collections() {
           {/* Reset */}
           <button
             onClick={handleReset}
-            className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-brand transition-all"
+            className="p-2.5 border border-slate-200 rounded-custom text-slate-500 hover:text-brand transition-all"
             title="Réinitialiser les filtres"
           >
             <span className="material-symbols-outlined">restart_alt</span>
           </button>
-        </div>
+          </div>
       </div>
 
       {/* Collections grid */}

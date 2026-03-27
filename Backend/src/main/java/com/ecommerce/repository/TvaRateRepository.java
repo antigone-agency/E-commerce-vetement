@@ -7,5 +7,6 @@ import java.util.List;
 
 public interface TvaRateRepository extends JpaRepository<TvaRate, Long> {
     List<TvaRate> findAllByOrderByIdAsc();
+
     long countByActifTrue();
 }

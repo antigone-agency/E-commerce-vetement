@@ -77,7 +77,7 @@ function Sidebar() {
     <aside className="w-64 bg-white border-r border-slate-200 hidden lg:flex flex-col sticky top-0 h-screen font-sidebar">
       {/* Logo */}
       {showLogo && (
-      <div className={`px-5 py-4 flex items-center ${logoAlign === 'center' ? 'justify-center' : ''}`}>
+      <div className={`px-[10px] py-[5px] flex items-center ${logoAlign === 'center' ? 'justify-center' : ''}`}>
         {logoSrc ? (
           <img
             src={logoSrc}

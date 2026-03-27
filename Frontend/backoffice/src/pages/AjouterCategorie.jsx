@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import CustomSelect from '../components/ui/CustomSelect'
+import PageHeader from '../components/ui/PageHeader'
 import { categoryApi } from '../api/categoryApi'
 
 // ── Reusable helpers ──────────────────────────────────────────────────────────
@@ -217,33 +218,15 @@ export default function AjouterCategorie() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto w-full space-y-6">
+    <div className="p-6 space-y-6 max-w-[1600px] mx-auto w-full">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/categories')}
-            className="text-slate-400 hover:text-brand transition-colors p-1 rounded-lg hover:bg-brand/5">
-            <span className="material-symbols-outlined text-xl">arrow_back</span>
-          </button>
-          <div>
-            <h1 className="text-lg font-bold text-slate-800">Ajouter une catégorie</h1>
-            <p className="text-xs text-slate-400">Remplissez les informations pour créer une nouvelle catégorie.</p>
-          </div>
-        </div>
-        <div className="flex gap-3">
-          <button onClick={() => navigate('/categories')}
-            className="px-5 py-2.5 rounded-custom text-sm font-bold border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">
-            Annuler
-          </button>
-          <button onClick={handleSubmit}
-            disabled={saving}
-            className="px-5 py-2.5 rounded-custom text-sm font-bold text-white bg-btn hover:bg-btn-dark transition-colors flex items-center gap-2 disabled:opacity-50">
-            <span className="material-symbols-outlined text-lg">{saving ? 'progress_activity' : 'save'}</span>
-            {saving ? 'Enregistrement...' : 'Enregistrer'}
-          </button>
-        </div>
-      </div>
+      <PageHeader title="Ajouter une catégorie" subtitle="Remplissez les informations pour créer une nouvelle catégorie.">
+        <PageHeader.SecondaryBtn icon="arrow_back" onClick={() => navigate('/categories')}>Retour</PageHeader.SecondaryBtn>
+        <PageHeader.PrimaryBtn icon={saving ? 'progress_activity' : 'save'} onClick={handleSubmit} disabled={saving}>
+          {saving ? 'Enregistrement...' : 'Enregistrer'}
+        </PageHeader.PrimaryBtn>
+      </PageHeader>
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 

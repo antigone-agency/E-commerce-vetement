@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import apiClient from '../../api/apiClient'
+import apiClient, { scheduleAutoLogout } from '../../api/apiClient'
 
 export default function SignupForm({ onSwitch }) {
   const navigate = useNavigate()
@@ -47,6 +47,7 @@ export default function SignupForm({ onSwitch }) {
       localStorage.setItem('accessToken', data.accessToken)
       localStorage.setItem('refreshToken', data.refreshToken)
       localStorage.setItem('user', JSON.stringify(data.user))
+      scheduleAutoLogout()
       navigate('/')
     } catch (err) {
       const msg = err.response?.data?.message || "Erreur lors de la création du compte."

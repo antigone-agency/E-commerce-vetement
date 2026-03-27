@@ -37,15 +37,24 @@ public class TvaShippingService {
     @Transactional
     public TvaConfigResponse updateConfig(TvaConfigRequest req) {
         TvaConfig c = getOrCreateConfig();
-        if (req.getTvaActive() != null)       c.setTvaActive(req.getTvaActive());
-        if (req.getTauxDefaut() != null)      c.setTauxDefaut(req.getTauxDefaut());
-        if (req.getDevise() != null)          c.setDevise(req.getDevise());
-        if (req.getStandardEnabled() != null) c.setStandardEnabled(req.getStandardEnabled());
-        if (req.getStandardSeuil() != null)   c.setStandardSeuil(req.getStandardSeuil());
-        if (req.getStandardDelai() != null)   c.setStandardDelai(req.getStandardDelai());
-        if (req.getExpressEnabled() != null)  c.setExpressEnabled(req.getExpressEnabled());
-        if (req.getExpressSeuil() != null)    c.setExpressSeuil(req.getExpressSeuil());
-        if (req.getExpressDelai() != null)    c.setExpressDelai(req.getExpressDelai());
+        if (req.getTvaActive() != null)
+            c.setTvaActive(req.getTvaActive());
+        if (req.getTauxDefaut() != null)
+            c.setTauxDefaut(req.getTauxDefaut());
+        if (req.getDevise() != null)
+            c.setDevise(req.getDevise());
+        if (req.getStandardEnabled() != null)
+            c.setStandardEnabled(req.getStandardEnabled());
+        if (req.getStandardSeuil() != null)
+            c.setStandardSeuil(req.getStandardSeuil());
+        if (req.getStandardDelai() != null)
+            c.setStandardDelai(req.getStandardDelai());
+        if (req.getExpressEnabled() != null)
+            c.setExpressEnabled(req.getExpressEnabled());
+        if (req.getExpressSeuil() != null)
+            c.setExpressSeuil(req.getExpressSeuil());
+        if (req.getExpressDelai() != null)
+            c.setExpressDelai(req.getExpressDelai());
         tvaConfigRepository.save(c);
         return mapConfigToResponse(c);
     }
@@ -151,7 +160,8 @@ public class TvaShippingService {
         zone.setMethode(req.getMethode());
         zone.setEstimation(req.getEstimation());
         zone.setCout(req.getCout());
-        if (req.getStatut() != null) zone.setStatut(req.getStatut());
+        if (req.getStatut() != null)
+            zone.setStatut(req.getStatut());
         return mapZoneToResponse(shippingZoneRepository.save(zone));
     }
 

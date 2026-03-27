@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import CustomSelect from '../components/ui/CustomSelect'
+import PageHeader from '../components/ui/PageHeader'
 import { categoryApi } from '../api/categoryApi'
 
 // ── Reusable helpers ──────────────────────────────────────────────────────────
@@ -246,33 +247,15 @@ export default function EditCategorie() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto w-full space-y-6">
+    <div className="p-6 space-y-6 max-w-[1600px] mx-auto w-full">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/categories')}
-            className="text-slate-400 hover:text-brand transition-colors p-1 rounded-lg hover:bg-brand/5">
-            <span className="material-symbols-outlined text-xl">arrow_back</span>
-          </button>
-          <div>
-            <h1 className="text-lg font-bold text-slate-800">Modifier la catégorie</h1>
-            <p className="text-xs text-slate-400">Modifiez les informations de cette catégorie.</p>
-          </div>
-        </div>
-        <div className="flex gap-3">
-          <button onClick={() => navigate('/categories')}
-            className="px-5 py-2.5 rounded-custom text-sm font-bold border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">
-            Annuler
-          </button>
-          <button onClick={handleSubmit}
-            disabled={saving}
-            className="px-5 py-2.5 rounded-custom text-sm font-bold text-white bg-btn hover:bg-btn-dark transition-colors flex items-center gap-2 disabled:opacity-50">
-            <span className="material-symbols-outlined text-lg">{saving ? 'progress_activity' : 'save'}</span>
-            {saving ? 'Enregistrement...' : 'Mettre à jour'}
-          </button>
-        </div>
-      </div>
+      <PageHeader title="Modifier la catégorie" subtitle="Modifiez les informations de cette catégorie.">
+        <PageHeader.SecondaryBtn icon="arrow_back" onClick={() => navigate('/categories')}>Retour</PageHeader.SecondaryBtn>
+        <PageHeader.PrimaryBtn icon={saving ? 'progress_activity' : 'save'} onClick={handleSubmit} disabled={saving}>
+          {saving ? 'Enregistrement...' : 'Mettre à jour'}
+        </PageHeader.PrimaryBtn>
+      </PageHeader>
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 

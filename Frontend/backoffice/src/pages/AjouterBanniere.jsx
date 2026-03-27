@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import CustomSelect from '../components/ui/CustomSelect'
+import PageHeader from '../components/ui/PageHeader'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const Label = ({ children }) => <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">{children}</label>
@@ -126,27 +127,10 @@ export default function AjouterBanniere() {
   return (
     <form onSubmit={handleSubmit} className="p-6 space-y-6 max-w-[1600px] mx-auto w-full">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <button type="button" onClick={() => navigate('/bannieres')}
-            className="text-slate-400 hover:text-brand transition-colors p-1 rounded-lg hover:bg-brand/5">
-            <span className="material-symbols-outlined text-xl">arrow_back</span>
-          </button>
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">Ajouter une bannière</h2>
-            <p className="text-sm text-slate-500 mt-1">Créez et planifiez une nouvelle campagne visuelle pour votre boutique.</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <button type="button" onClick={() => navigate('/bannieres')} className="px-4 py-2.5 bg-slate-100 text-slate-700 font-semibold rounded-xl text-sm flex items-center gap-2 hover:bg-slate-200 transition-all border border-slate-200">
-            Annuler
-          </button>
-          <button type="submit" className="px-6 py-2.5 bg-btn text-white font-bold rounded-xl text-sm flex items-center gap-2 shadow-lg shadow-btn/20 hover:bg-btn-dark transition-all">
-            <span className="material-symbols-outlined text-lg">save</span>
-            Enregistrer
-          </button>
-        </div>
-      </div>
+      <PageHeader title="Ajouter une bannière" subtitle="Créez et planifiez une nouvelle campagne visuelle pour votre boutique.">
+        <PageHeader.SecondaryBtn icon="arrow_back" onClick={() => navigate('/bannieres')}>Retour</PageHeader.SecondaryBtn>
+        <PageHeader.PrimaryBtn icon="save" type="submit">Enregistrer</PageHeader.PrimaryBtn>
+      </PageHeader>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ───── LEFT COLUMN (2/3) ───── */}

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import CustomSelect from '../components/ui/CustomSelect'
+import PageHeader from '../components/ui/PageHeader'
 import { collectionApi } from '../api/collectionApi'
 import { categoryApi } from '../api/categoryApi'
 
@@ -203,33 +204,19 @@ export default function GererCollection() {
   }
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto w-full">
+    <div className="p-6 space-y-6 max-w-[1600px] mx-auto w-full">
+      <PageHeader title="Gérer la collection">
+        <PageHeader.SecondaryBtn icon="arrow_back" onClick={() => navigate('/collections')}>Retour</PageHeader.SecondaryBtn>
+        <PageHeader.DangerBtn icon="delete" onClick={() => setShowDeleteModal(true)}>Supprimer</PageHeader.DangerBtn>
+        <PageHeader.PrimaryBtn icon={saving ? 'hourglass_empty' : 'save'} onClick={handleSave} disabled={saving}>
+          {saving ? 'Sauvegarde...' : 'Sauvegarder'}
+        </PageHeader.PrimaryBtn>
+      </PageHeader>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
 
         {/* ── Left Column (2/3) ──────────────────────────────────────── */}
         <div className="lg:col-span-2 space-y-6">
-
-          {/* Page Header */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <button type="button" onClick={() => navigate('/collections')}
-                className="p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600">
-                <span className="material-symbols-outlined">arrow_back</span>
-              </button>
-              <h2 className="text-xl font-bold text-slate-900">Gérer la collection</h2>
-            </div>
-            <div className="flex gap-3">
-              <button type="button" onClick={() => setShowDeleteModal(true)}
-                className="px-4 py-2.5 border border-red-200 text-red-600 font-bold text-sm hover:bg-red-50 transition-colors rounded-xl flex items-center gap-2">
-                <span className="material-symbols-outlined text-lg">delete</span> Supprimer
-              </button>
-              <button type="button" onClick={handleSave} disabled={saving}
-                className="px-5 py-2.5 bg-btn text-white font-bold rounded-xl text-sm flex items-center gap-2 shadow-lg shadow-btn/20 hover:bg-btn-dark transition-all disabled:opacity-50">
-                <span className="material-symbols-outlined text-lg">{saving ? 'hourglass_empty' : 'save'}</span>
-                {saving ? 'Sauvegarde...' : 'Sauvegarder'}
-              </button>
-            </div>
-          </div>
 
           {/* ── Informations générales ─────────────────────────────── */}
           <div className="bg-white rounded-custom border border-slate-200 shadow-sm overflow-hidden">

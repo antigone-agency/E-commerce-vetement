@@ -7,6 +7,49 @@ const apiClient = axios.create({
   },
 })
 
+// ── Auto-logout on JWT expiry ──────────────────────────────
+function getTokenExpiry(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return payload.exp ? payload.exp * 1000 : null
+  } catch {
+    return null
+  }
+}
+
+let logoutTimer = null
+
+function performLogout() {
+  if (logoutTimer) { clearTimeout(logoutTimer); logoutTimer = null }
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('refreshToken')
+  localStorage.removeItem('user')
+  window.location.href = 'http://localhost:3001/login?redirect=backoffice'
+}
+
+export function scheduleAutoLogout() {
+  if (logoutTimer) { clearTimeout(logoutTimer); logoutTimer = null }
+  const token = localStorage.getItem('accessToken')
+  if (!token) return
+  const expiry = getTokenExpiry(token)
+  if (!expiry) return
+  const delay = expiry - Date.now()
+  if (delay <= 0) { performLogout(); return }
+  logoutTimer = setTimeout(performLogout, delay)
+}
+
+// Schedule on app load
+scheduleAutoLogout()
+
+// Sync across browser tabs
+window.addEventListener('storage', (e) => {
+  if (e.key === 'accessToken') {
+    if (!e.newValue) performLogout()
+    else scheduleAutoLogout()
+  }
+})
+// ────────────────────────────────────────────────────────────
+
 // Intercepteur pour ajouter le token JWT automatiquement
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken')
@@ -59,16 +102,14 @@ apiClient.interceptors.response.use(
           localStorage.setItem('accessToken', data.accessToken)
           localStorage.setItem('refreshToken', data.refreshToken)
           isRefreshing = false
+          scheduleAutoLogout()
           onRefreshed(data.accessToken)
           original.headers.Authorization = `Bearer ${data.accessToken}`
           return apiClient(original)
         } catch {
           isRefreshing = false
           refreshSubscribers = []
-          localStorage.removeItem('accessToken')
-          localStorage.removeItem('refreshToken')
-          localStorage.removeItem('user')
-          window.location.href = 'http://localhost:3001/login?redirect=backoffice'
+          performLogout()
         }
       } else {
         isRefreshing = false

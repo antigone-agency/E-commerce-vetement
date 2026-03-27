@@ -148,7 +148,7 @@ function Produits() {
       </div>
 
       {/* ── Filters ── */}
-      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+      <div className="bg-white p-5 rounded-custom border border-slate-200 shadow-sm">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="relative flex-1">
             <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
@@ -208,11 +208,11 @@ function Produits() {
       )}
 
       {/* ── Table ── */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-custom border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.1em] bg-slate-50/80">
+            <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider font-bold">
+              <tr>
                 <th className="px-6 py-5 w-10">
                   <input
                     type="checkbox"

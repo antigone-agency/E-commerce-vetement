@@ -283,9 +283,9 @@ export default function Clients() {
       </div>
 
       {/* ── Filters ── */}
-      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-          <div className="relative flex-1 max-w-md">
+      <div className="bg-white p-5 rounded-custom border border-slate-200 shadow-sm">
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="relative flex-1">
             <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
               <span className="material-symbols-outlined text-xl">search</span>
             </span>
@@ -294,10 +294,10 @@ export default function Clients() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher un client par nom ou email..."
-              className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand transition-all"
+              className="block w-full pl-11 pr-4 py-2.5 border border-slate-200 bg-slate-50/50 rounded-custom text-sm focus:ring-brand focus:border-brand transition-all placeholder:text-slate-400 outline-none"
             />
           </div>
-          <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex flex-wrap gap-3">
             <CustomSelect value={filterSegment} onChange={setFilterSegment} options={segmentOptions} />
             <CustomSelect value={filterStatut} onChange={setFilterStatut} options={statusOptions} />
           </div>
@@ -305,7 +305,7 @@ export default function Clients() {
       </div>
 
       {/* ── Table ── */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-custom border border-slate-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Spinner />
@@ -313,15 +313,15 @@ export default function Clients() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Client</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Contact</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Segmentation</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Fréquence</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Total Dépensé</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Statut</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+              <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider font-bold">
+                <tr>
+                  <th className="px-6 py-4">Client</th>
+                  <th className="px-6 py-4">Contact</th>
+                  <th className="px-6 py-4 text-center">Segmentation</th>
+                  <th className="px-6 py-4 text-center">Fréquence</th>
+                  <th className="px-6 py-4">Total Dépensé</th>
+                  <th className="px-6 py-4">Statut</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">

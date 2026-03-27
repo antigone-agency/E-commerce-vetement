@@ -331,7 +331,6 @@ export default function Categories() {
 
   return (
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto w-full">
-
       {/* Page Header */}
       <PageHeader title="Catégories">
         <PageHeader.SecondaryBtn icon="download">Exporter</PageHeader.SecondaryBtn>

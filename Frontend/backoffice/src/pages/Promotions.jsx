@@ -357,36 +357,40 @@ export default function Promotions() {
       {tab === 'coupons' && (
         <>
           {/* Filters */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="relative flex-1 min-w-[240px]">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
-                <input value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} placeholder="Rechercher un code coupon..."
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-brand focus:border-brand focus:bg-white transition-all outline-none" />
+          <div className="bg-white p-5 rounded-custom border border-slate-200 shadow-sm">
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="relative flex-1">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                  <span className="material-symbols-outlined text-xl">search</span>
+                </span>
+                <input type="text" value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} placeholder="Rechercher un code coupon..."
+                  className="block w-full pl-11 pr-4 py-2.5 border border-slate-200 bg-slate-50/50 rounded-custom text-sm focus:ring-brand focus:border-brand transition-all placeholder:text-slate-400 outline-none" />
               </div>
+              <div className="flex flex-wrap gap-3">
               <CustomSelect value={filterStatut} onChange={v => { setFilterStatut(v); setPage(1) }} options={filterStatutOptions} size="sm" className="min-w-[160px]" />
               <CustomSelect value={filterType} onChange={v => { setFilterType(v); setPage(1) }} options={filterTypeOptions} size="sm" className="min-w-[160px]" />
-              <button onClick={resetFilters} className="p-2.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors" title="Réinitialiser">
+              <button onClick={resetFilters} className="p-2.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-custom transition-colors" title="Réinitialiser">
                 <span className="material-symbols-outlined text-lg">refresh</span>
               </button>
+              </div>
             </div>
           </div>
 
           {/* Table */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-custom border border-slate-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-slate-50/80 border-b border-slate-100">
+                <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider font-bold">
                   <tr>
-                    <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">Code</th>
-                    <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">Type</th>
-                    <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">Remise</th>
-                    <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">Segment</th>
-                    <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">Utilisation</th>
-                    <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">Expiration</th>
-                    <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 text-center">Statut</th>
-                    <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 text-center">Perf.</th>
-                    <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 text-right">Actions</th>
+                    <th className="px-6 py-3">Code</th>
+                    <th className="px-6 py-3">Type</th>
+                    <th className="px-6 py-3">Remise</th>
+                    <th className="px-6 py-3">Segment</th>
+                    <th className="px-6 py-3">Utilisation</th>
+                    <th className="px-6 py-3">Expiration</th>
+                    <th className="px-6 py-3 text-center">Statut</th>
+                    <th className="px-6 py-3 text-center">Perf.</th>
+                    <th className="px-6 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">

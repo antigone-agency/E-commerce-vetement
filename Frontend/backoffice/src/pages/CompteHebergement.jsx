@@ -75,7 +75,7 @@ export default function CompteHebergement() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-[1200px] mx-auto w-full">
+    <div className="p-6 space-y-6 max-w-[1600px] mx-auto w-full">
 
       {/* Page Header */}
       <PageHeader title="Informations du Compte">

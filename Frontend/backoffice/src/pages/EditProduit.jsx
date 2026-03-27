@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import CustomSelect from '../components/ui/CustomSelect'
+import PageHeader from '../components/ui/PageHeader'
 
 // ── Mock product data keyed by id ─────────────────────────────────────────────
 const mockProducts = {
@@ -224,33 +225,12 @@ function EditProduit() {
   const removeUpsellTag = (tag) => setUpsellTags((prev) => prev.filter((t) => t !== tag))
 
   return (
-    <div className="flex-1 overflow-y-auto p-8">
-      <div className="max-w-[1400px] mx-auto space-y-8">
+    <div className="p-6 space-y-6 max-w-[1600px] mx-auto w-full">
 
         {/* Page Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <h2 className="text-2xl font-bold text-slate-900">
-                Modifier le produit
-              </h2>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold font-badge bg-badge/10 text-badge uppercase tracking-wider">
-                En Stock
-              </span>
-            </div>
-            <p className="text-slate-500 text-sm">
-              Modifiez les informations de{' '}
-              <span className="font-semibold text-slate-700">{name}</span>
-            </p>
-          </div>
-          <button
-            onClick={() => navigate('/produits')}
-            className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors"
-          >
-            <span className="material-symbols-outlined text-lg">arrow_back</span>
-            Retour aux produits
-          </button>
-        </div>
+        <PageHeader title="Modifier le produit" subtitle={`Modifiez les informations de ${name}`}>
+          <PageHeader.SecondaryBtn icon="arrow_back" onClick={() => navigate('/produits')}>Retour</PageHeader.SecondaryBtn>
+        </PageHeader>
 
         <div className="grid grid-cols-12 gap-8">
 
@@ -756,7 +736,6 @@ function EditProduit() {
           </div>
         </div>
 
-      </div>
     </div>
   )
 }

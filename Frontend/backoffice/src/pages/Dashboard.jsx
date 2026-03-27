@@ -188,7 +188,7 @@ function Dashboard() {
   const [chartTab, setChartTab] = useState('CA')
 
   return (
-    <div className="p-8 space-y-8 max-w-[1600px] mx-auto w-full">
+    <div className="p-6 space-y-6 max-w-[1600px] mx-auto w-full">
 
       {/* ── Section A: KPI ── */}
       <div className="space-y-4">

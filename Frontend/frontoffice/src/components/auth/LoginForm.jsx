@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import apiClient from '../../api/apiClient'
+import apiClient, { scheduleAutoLogout } from '../../api/apiClient'
 
 export default function LoginForm({ onSwitch }) {
   const navigate = useNavigate()
@@ -20,6 +20,7 @@ export default function LoginForm({ onSwitch }) {
       localStorage.setItem('accessToken', data.accessToken)
       localStorage.setItem('refreshToken', data.refreshToken)
       localStorage.setItem('user', JSON.stringify(data.user))
+      scheduleAutoLogout()
 
       const redirect = params.get('redirect')
       if (redirect === 'backoffice' && data.user.roleName !== 'CLIENT') {

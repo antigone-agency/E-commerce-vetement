@@ -32,6 +32,12 @@ function getBreadcrumbs(pathname) {
       { label: 'Gérer Collection', path: null },
     ]
   }
+  if (pathname === '/clients/nouveau') {
+    return [
+      { label: 'Clients', path: '/clients' },
+      { label: 'Ajouter un compte', path: null },
+    ]
+  }
   if (pathname.match(/^\/clients\/\d+$/)) {
     return [
       { label: 'Clients', path: '/clients' },
@@ -62,6 +68,12 @@ function getBreadcrumbs(pathname) {
       { label: 'Ajouter Catégorie', path: null },
     ]
   }
+  if (pathname.match(/^\/categories\/edit\/\d+$/)) {
+    return [
+      { label: 'Catégories', path: '/categories' },
+      { label: 'Modifier Catégorie', path: null },
+    ]
+  }
   if (pathname.match(/^\/commandes\/\d+$/)) {
     return [
       { label: 'Commandes', path: '/commandes' },
@@ -83,7 +95,7 @@ function Header() {
   const crumbs = getBreadcrumbs(location.pathname)
 
   return (
-    <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10">
+    <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-10">
       <nav className="flex items-center gap-2">
         {crumbs.map((crumb, i) => {
           const isLast = i === crumbs.length - 1
