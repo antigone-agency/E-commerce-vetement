@@ -92,16 +92,22 @@ function CollectionCard({ col, onToggleFeatured, onDelete }) {
               Vedette
             </span>
           )}
+          {col.menuFeatured && (
+            <span className="px-2 py-1 bg-amber-500 text-white text-[10px] font-black font-badge uppercase tracking-wider rounded flex items-center gap-1">
+              <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+              Menu ★
+            </span>
+          )}
           {col.type === 'auto' && (
             <span className="px-2 py-1 bg-blue-500 text-white text-[10px] font-black font-badge uppercase tracking-wider rounded">Automatique</span>
           )}
         </div>
 
         {/* Floating quick actions */}
-        <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className={`absolute top-3 right-3 flex flex-col gap-2 transition-opacity ${col.featured || col.menuFeatured ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
           <button
-            onClick={() => onToggleFeatured(col.id)}
-            className="w-8 h-8 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-amber-500 hover:bg-white transition-colors shadow-sm"
+            onClick={(e) => { e.stopPropagation(); onToggleFeatured(col.id) }}
+            className={`w-8 h-8 backdrop-blur rounded-full flex items-center justify-center transition-colors shadow-sm ${col.featured ? 'bg-amber-400 text-white hover:bg-amber-500' : 'bg-white/90 text-amber-500 hover:bg-white'}`}
             title={col.featured ? 'Retirer de la vedette' : 'Mettre en vedette'}
           >
             <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: col.featured ? "'FILL' 1" : "'FILL' 0" }}>star</span>
@@ -239,13 +245,29 @@ export default function Collections() {
 
   const total = collections.length
   const active = collections.filter((c) => c.statut === 'active').length
-  const featured = collections.filter((c) => c.featured).length
+  const featured = collections.filter((c) => c.featured || c.menuFeatured).length
   const drafts = collections.filter((c) => c.statut === 'brouillon').length
 
-  const handleToggleFeatured = (id) => {
+  const handleToggleFeatured = async (id) => {
+    const col = collections.find((c) => c.id === id)
+    if (!col) return
+    const newFeatured = !col.featured
+    // Optimistic update — sync both featured and menuFeatured
     setCollections((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, featured: !c.featured } : c))
+      prev.map((c) => (c.id === id ? { ...c, featured: newFeatured, menuFeatured: newFeatured } : c))
     )
+    try {
+      // Build a clean CollectionRequest payload (exclude response-only fields)
+      const { id: _id, createdAt, updatedAt, productIds, ...requestFields } = col
+      await collectionApi.update(id, { ...requestFields, featured: newFeatured, menuFeatured: newFeatured })
+      toast.success(newFeatured ? 'Collection mise en vedette' : 'Vedette retirée')
+    } catch {
+      // Revert on error
+      setCollections((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, featured: !newFeatured, menuFeatured: col.menuFeatured } : c))
+      )
+      toast.error('Erreur lors de la mise à jour')
+    }
   }
 
   const confirmDelete = async () => {

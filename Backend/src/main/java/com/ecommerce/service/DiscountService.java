@@ -4,12 +4,15 @@ import com.ecommerce.dto.request.DiscountRequest;
 import com.ecommerce.dto.response.DiscountResponse;
 import com.ecommerce.entity.Category;
 import com.ecommerce.entity.Discount;
+import com.ecommerce.entity.Product;
 import com.ecommerce.repository.CategoryRepository;
 import com.ecommerce.repository.DiscountRepository;
+import com.ecommerce.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -18,6 +21,7 @@ public class DiscountService {
 
     private final DiscountRepository discountRepository;
     private final CategoryRepository categoryRepository;
+    private final ProductRepository productRepository;
 
     // ── Get all discounts ──────────────────────────────────────────
     @Transactional(readOnly = true)
@@ -57,6 +61,7 @@ public class DiscountService {
         }
 
         discount = discountRepository.save(discount);
+        syncProductsPromo(discount);
         return mapToResponse(discount);
     }
 
@@ -64,6 +69,9 @@ public class DiscountService {
     @Transactional
     public DiscountResponse updateDiscount(Long id, DiscountRequest request) {
         Discount discount = findOrThrow(id);
+
+        // Clear promo on old products before updating
+        clearProductsPromo(discount);
 
         discount.setNom(request.getNom());
         discount.setType(request.getType());
@@ -86,6 +94,7 @@ public class DiscountService {
         }
 
         discount = discountRepository.save(discount);
+        syncProductsPromo(discount);
         return mapToResponse(discount);
     }
 
@@ -93,6 +102,7 @@ public class DiscountService {
     @Transactional
     public void deleteDiscount(Long id) {
         Discount discount = findOrThrow(id);
+        clearProductsPromo(discount);
         discountRepository.delete(discount);
     }
 
@@ -102,6 +112,7 @@ public class DiscountService {
         Discount discount = findOrThrow(id);
         discount.setStatut("actif".equals(discount.getStatut()) ? "inactif" : "actif");
         discount = discountRepository.save(discount);
+        syncProductsPromo(discount);
         return mapToResponse(discount);
     }
 
@@ -119,6 +130,65 @@ public class DiscountService {
             return Math.max(0, prixOriginal - (prixOriginal * valeur / 100));
         }
         return Math.max(0, prixOriginal - valeur);
+    }
+
+    /**
+     * Sync Product entities when a discount is created/updated/toggled.
+     * Sets promoActive, promoPrice, promoStart, promoEnd on each matched product.
+     */
+    private void syncProductsPromo(Discount discount) {
+        List<Product> products = resolveProducts(discount);
+        if (products.isEmpty())
+            return;
+
+        boolean active = "actif".equals(discount.getStatut());
+        for (Product product : products) {
+            if (active) {
+                double finalPrice = computeFinalPrice(discount.getType(), discount.getValeur(), product.getSalePrice());
+                product.setPromoActive(true);
+                product.setPromoPrice(finalPrice);
+                product.setPromoStart(discount.getDateDebut());
+                product.setPromoEnd(discount.getDateFin());
+            } else {
+                product.setPromoActive(false);
+                product.setPromoPrice(0);
+                product.setPromoStart(null);
+                product.setPromoEnd(null);
+            }
+        }
+        productRepository.saveAll(products);
+    }
+
+    /**
+     * Clear promo fields on products linked to this discount.
+     */
+    private void clearProductsPromo(Discount discount) {
+        List<Product> products = resolveProducts(discount);
+        for (Product product : products) {
+            product.setPromoActive(false);
+            product.setPromoPrice(0);
+            product.setPromoStart(null);
+            product.setPromoEnd(null);
+        }
+        if (!products.isEmpty()) {
+            productRepository.saveAll(products);
+        }
+    }
+
+    /**
+     * Resolve products from the discount's productName (comma-separated) or
+     * category.
+     */
+    private List<Product> resolveProducts(Discount discount) {
+        if (discount.getProductName() != null && !discount.getProductName().isBlank()) {
+            List<String> names = Arrays.stream(discount.getProductName().split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+            return productRepository.findByNomIn(names);
+        }
+        // If category-based, could extend here in the future
+        return List.of();
     }
 
     private DiscountResponse mapToResponse(Discount d) {

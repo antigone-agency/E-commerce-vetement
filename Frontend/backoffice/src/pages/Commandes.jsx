@@ -1,208 +1,190 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import KpiCard from '../components/ui/KpiCard'
 import PageHeader from '../components/ui/PageHeader'
 import CustomSelect from '../components/ui/CustomSelect'
+import apiClient from '../api/apiClient'
 
-// ── Mock Data ──────────────────────────────────────────────────────────────────
-const mockCommandes = [
-  {
-    id: '#ORD-9842',
-    client: 'Marc Bernard',
-    email: 'm.bernard@gmail.com',
-    phone: '06 12 34 56 78',
-    initials: 'MB',
-    paiement: 'Carte',
-    paiementBg: 'bg-badge/10 text-badge',
-    statut: 'Livrée',
-    statutBg: 'bg-badge/10 text-badge',
-    livraison: 'Livré',
-    livraisonBg: 'bg-slate-100 text-slate-600',
-    total: '120.00 DT',
-    date: '12 Mar 2026',
-    items: 3,
-    urgent: false,
-  },
-  {
-    id: '#ORD-9843',
-    client: 'Alice Dubois',
-    email: 'a.dubois@outlook.com',
-    phone: '07 89 45 12 30',
-    initials: 'AD',
-    paiement: 'À la livraison',
-    paiementBg: 'bg-amber-100 text-amber-800',
-    statut: 'Confirmée',
-    statutBg: 'bg-blue-100 text-blue-700',
-    livraison: 'En préparation',
-    livraisonBg: 'bg-blue-50 text-blue-600',
-    total: '345.50 DT',
-    date: '12 Mar 2026',
-    items: 5,
-    urgent: true,
-  },
-  {
-    id: '#ORD-9844',
-    client: 'Julie Morel',
-    email: 'jmorel@pro.fr',
-    phone: '01 45 67 89 00',
-    initials: 'JM',
-    paiement: 'Échec',
-    paiementBg: 'bg-red-100 text-red-800',
-    statut: 'Annulée',
-    statutBg: 'bg-red-100 text-red-700',
-    livraison: '—',
-    livraisonBg: 'bg-slate-50 text-slate-400',
-    total: '56.00 DT',
-    date: '11 Mar 2026',
-    items: 1,
-    urgent: false,
-  },
-  {
-    id: '#ORD-9845',
-    client: 'Thomas Klein',
-    email: 'tklein@gmail.com',
-    phone: '06 00 11 22 33',
-    initials: 'TK',
-    paiement: 'Remboursé',
-    paiementBg: 'bg-purple-100 text-purple-800',
-    statut: 'Retournée',
-    statutBg: 'bg-slate-700 text-white',
-    livraison: 'Retour en cours',
-    livraisonBg: 'bg-amber-50 text-amber-700',
-    total: '890.00 DT',
-    date: '10 Mar 2026',
-    items: 8,
-    urgent: false,
-  },
-  {
-    id: '#ORD-9846',
-    client: 'Sophie Laurent',
-    email: 's.laurent@email.com',
-    phone: '06 55 44 33 22',
-    initials: 'SL',
-    paiement: 'Carte',
-    paiementBg: 'bg-badge/10 text-badge',
-    statut: 'En attente',
-    statutBg: 'bg-amber-100 text-amber-700',
-    livraison: 'En attente',
-    livraisonBg: 'bg-amber-50 text-amber-600',
-    total: '215.00 DT',
-    date: '10 Mar 2026',
-    items: 2,
-    urgent: true,
-  },
-  {
-    id: '#ORD-9847',
-    client: 'Pierre Garnier',
-    email: 'p.garnier@pro.fr',
-    phone: '06 77 88 99 00',
-    initials: 'PG',
-    paiement: 'Virement',
-    paiementBg: 'bg-sky-100 text-sky-800',
-    statut: 'Expédiée',
-    statutBg: 'bg-indigo-100 text-indigo-700',
-    livraison: 'En transit',
-    livraisonBg: 'bg-indigo-50 text-indigo-600',
-    total: '1 240.00 DT',
-    date: '09 Mar 2026',
-    items: 12,
-    urgent: false,
-  },
-  {
-    id: '#ORD-9848',
-    client: 'Nathalie Mercier',
-    email: 'n.mercier@corp.com',
-    phone: '01 23 45 67 89',
-    initials: 'NM',
-    paiement: 'Carte',
-    paiementBg: 'bg-badge/10 text-badge',
-    statut: 'Livrée',
-    statutBg: 'bg-badge/10 text-badge',
-    livraison: 'Livré',
-    livraisonBg: 'bg-slate-100 text-slate-600',
-    total: '78.50 DT',
-    date: '08 Mar 2026',
-    items: 1,
-    urgent: false,
-  },
-  {
-    id: '#ORD-9849',
-    client: 'David Roux',
-    email: 'd.roux@email.com',
-    phone: '06 11 22 33 44',
-    initials: 'DR',
-    paiement: 'À la livraison',
-    paiementBg: 'bg-amber-100 text-amber-800',
-    statut: 'Confirmée',
-    statutBg: 'bg-blue-100 text-blue-700',
-    livraison: 'En préparation',
-    livraisonBg: 'bg-blue-50 text-blue-600',
-    total: '432.00 DT',
-    date: '08 Mar 2026',
-    items: 4,
-    urgent: true,
-  },
-]
+const STATUS_LABELS = {
+  EN_ATTENTE: 'En attente',
+  CONFIRMEE: 'Confirmée',
+  EN_PREPARATION: 'En préparation',
+  EXPEDIEE: 'Expédiée',
+  LIVREE: 'Livrée',
+  ANNULEE: 'Annulée',
+  REMBOURSEE: 'Remboursée',
+}
 
-const kpiData = [
-  {
-    label: 'Total Commandes',
-    value: '1 284',
-    sub: '+12.5%',
-    subColor: 'text-brand',
-    icon: 'shopping_cart',
-    iconBg: 'bg-badge/10 text-badge',
-  },
-  {
-    label: "Chiffre d'affaires",
-    value: '142 500 DT',
-    sub: '+8.3%',
-    subColor: 'text-brand',
-    icon: 'payments',
-    iconBg: 'bg-badge/10 text-badge',
-  },
-  {
-    label: 'En attente',
-    value: '42',
-    sub: '3 urgentes',
-    subColor: 'text-amber-500',
-    icon: 'pending_actions',
-    iconBg: 'bg-amber-50 text-amber-500',
-  },
-  {
-    label: 'Taux de livraison',
-    value: '94.2%',
-    sub: '+2.1%',
-    subColor: 'text-brand',
-    icon: 'local_shipping',
-    iconBg: 'bg-blue-50 text-blue-500',
-  },
-]
+const STATUS_BG = {
+  EN_ATTENTE: 'bg-amber-100 text-amber-700',
+  CONFIRMEE: 'bg-blue-100 text-blue-700',
+  EN_PREPARATION: 'bg-indigo-100 text-indigo-700',
+  EXPEDIEE: 'bg-indigo-100 text-indigo-700',
+  LIVREE: 'bg-badge/10 text-badge',
+  ANNULEE: 'bg-red-100 text-red-700',
+  REMBOURSEE: 'bg-purple-100 text-purple-700',
+}
 
-const statutOptions = ['Tous', 'En attente', 'Confirmée', 'Expédiée', 'Livrée', 'Annulée', 'Retournée']
-const paiementOptions = ['Tous', 'Carte', 'À la livraison', 'Virement', 'Remboursé', 'Échec']
-const periodeOptions = ['Toutes', 'Aujourd\'hui', '7 derniers jours', '30 derniers jours', '90 derniers jours']
+const statutOptions = ['Tous', 'En attente', 'Confirmée', 'En préparation', 'Expédiée', 'Livrée', 'Annulée']
+
+// An order is archived when manually archived OR (terminal status AND older than 24h)
+// manuallyArchived set is passed in at call site
+const isArchivedAuto = (o) => {
+  if (o.status !== 'LIVREE' && o.status !== 'ANNULEE') return false
+  return Date.now() - new Date(o.createdAt).getTime() > 24 * 60 * 60 * 1000
+}
+
+function getInitials(firstName, lastName) {
+  return ((firstName?.[0] || '') + (lastName?.[0] || '')).toUpperCase() || '??'
+}
+
+function formatDate(iso) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 
 export default function Commandes() {
   const navigate = useNavigate()
+  const [orders, setOrders] = useState([])
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('actives')
+
+  // Active orders filters
   const [search, setSearch] = useState('')
   const [filterStatut, setFilterStatut] = useState('Tous')
-  const [filterPaiement, setFilterPaiement] = useState('Tous')
-  const [filterPeriode, setFilterPeriode] = useState('Toutes')
   const [page, setPage] = useState(1)
   const [selectedRows, setSelectedRows] = useState([])
 
-  const filtered = mockCommandes.filter((c) => {
+  // Archive filters
+  const [archiveSearch, setArchiveSearch] = useState('')
+  const [archiveCategory, setArchiveCategory] = useState('Toutes')
+  const [archivePriceMin, setArchivePriceMin] = useState('')
+  const [archivePriceMax, setArchivePriceMax] = useState('')
+  const [archivePage, setArchivePage] = useState(1)
+
+  const perPage = 10
+
+  // Manually archived order IDs (persisted in localStorage)
+  const [manuallyArchived, setManuallyArchived] = useState(() => {
+    try {
+      const stored = localStorage.getItem('archivedOrderIds')
+      return new Set(stored ? JSON.parse(stored) : [])
+    } catch {
+      return new Set()
+    }
+  })
+
+  const archiveManually = (id) => {
+    setManuallyArchived(prev => {
+      const next = new Set(prev)
+      next.add(id)
+      try { localStorage.setItem('archivedOrderIds', JSON.stringify([...next])) } catch {}
+      return next
+    })
+    toast.success('Commande archivée')
+  }
+
+  useEffect(() => {
+    fetchOrders()
+    fetchProducts()
+  }, [])
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true)
+      const { data } = await apiClient.get('/admin/orders')
+      setOrders(data)
+    } catch (err) {
+      toast.error('Erreur lors du chargement des commandes')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchProducts = async () => {
+    try {
+      const { data } = await apiClient.get('/admin/products?size=1000')
+      const list = Array.isArray(data) ? data : (data?.content || [])
+      setProducts(list)
+    } catch {
+      // silent — category filter degrades gracefully
+    }
+  }
+
+  // KPIs — exclude cancelled & refunded from revenue
+  const totalOrders = orders.length
+  const revenueOrders = orders.filter(o => o.status !== 'ANNULEE' && o.status !== 'REMBOURSEE')
+  const totalRevenueTTC = revenueOrders.reduce((s, o) => s + (o.total || 0), 0)
+  const totalTva = revenueOrders.reduce((s, o) => s + (o.tvaAmount || 0), 0)
+  const totalRevenueHT = totalRevenueTTC - totalTva
+  const enAttente = orders.filter(o => o.status === 'EN_ATTENTE').length
+
+  const kpiData = [
+    { label: 'Total Commandes', value: String(totalOrders), icon: 'shopping_cart', iconBg: 'bg-badge/10 text-badge' },
+    { label: "Chiffre d'affaires HT", value: `${totalRevenueHT.toFixed(2)} DT`, icon: 'payments', iconBg: 'bg-badge/10 text-badge' },
+    { label: 'En attente', value: String(enAttente), sub: enAttente > 0 ? 'À traiter' : '', subColor: 'text-amber-500', icon: 'pending_actions', iconBg: 'bg-amber-50 text-amber-500' },
+    { label: 'Total TVA collectée', value: `${totalTva.toFixed(2)} DT`, icon: 'receipt_long', iconBg: 'bg-purple-50 text-purple-500' },
+  ]
+
+  // Product → category map (productId → categoryNom)
+  const productCategoryMap = useMemo(() => {
+    const map = {}
+    products.forEach(p => { map[p.id] = p.categoryNom || '' })
+    return map
+  }, [products])
+
+  // Split active vs archived
+  const isArchived = (o) => manuallyArchived.has(o.id) || isArchivedAuto(o)
+  const activeOrders = orders.filter(o => !isArchived(o))
+  const archivedOrders = orders.filter(o => isArchived(o))
+
+  // Unique categories found in archived orders' items
+  const archiveCategories = useMemo(() => {
+    const cats = new Set()
+    archivedOrders.forEach(o => {
+      ;(o.items || []).forEach(item => {
+        const cat = productCategoryMap[item.productId]
+        if (cat) cats.add(cat)
+      })
+    })
+    return ['Toutes', ...Array.from(cats).sort()]
+  }, [archivedOrders, productCategoryMap])
+
+  // Filter active orders
+  const filtered = activeOrders.filter((o) => {
+    const statusLabel = STATUS_LABELS[o.status] || o.status
     const matchSearch =
       search === '' ||
-      c.id.toLowerCase().includes(search.toLowerCase()) ||
-      c.client.toLowerCase().includes(search.toLowerCase()) ||
-      c.email.toLowerCase().includes(search.toLowerCase())
-    const matchStatut = filterStatut === 'Tous' || c.statut === filterStatut
-    const matchPaiement = filterPaiement === 'Tous' || c.paiement === filterPaiement
-    return matchSearch && matchStatut && matchPaiement
+      (o.reference || '').toLowerCase().includes(search.toLowerCase()) ||
+      `${o.firstName} ${o.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
+      (o.email || '').toLowerCase().includes(search.toLowerCase())
+    const matchStatut = filterStatut === 'Tous' || statusLabel === filterStatut
+    return matchSearch && matchStatut
   })
+
+  // Pagination for active orders
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
+  const paginated = filtered.slice((page - 1) * perPage, page * perPage)
+
+  // Filter archived orders
+  const filteredArchived = archivedOrders.filter(o => {
+    const matchSearch =
+      archiveSearch === '' ||
+      (o.reference || '').toLowerCase().includes(archiveSearch.toLowerCase()) ||
+      `${o.firstName} ${o.lastName}`.toLowerCase().includes(archiveSearch.toLowerCase())
+    const matchPrice =
+      (!archivePriceMin || o.total >= parseFloat(archivePriceMin)) &&
+      (!archivePriceMax || o.total <= parseFloat(archivePriceMax))
+    const matchCategory =
+      archiveCategory === 'Toutes' ||
+      (o.items || []).some(item => productCategoryMap[item.productId] === archiveCategory)
+    return matchSearch && matchPrice && matchCategory
+  })
+  const archiveTotalPages = Math.max(1, Math.ceil(filteredArchived.length / perPage))
+  const archivedPaginated = filteredArchived.slice((archivePage - 1) * perPage, archivePage * perPage)
 
   const toggleRow = (id) =>
     setSelectedRows((prev) =>
@@ -210,52 +192,34 @@ export default function Commandes() {
     )
 
   const toggleAll = () => {
-    if (selectedRows.length === filtered.length) {
+    if (selectedRows.length === paginated.length) {
       setSelectedRows([])
     } else {
-      setSelectedRows(filtered.map((c) => c.id))
+      setSelectedRows(paginated.map((c) => c.id))
     }
   }
 
   const resetFilters = () => {
     setSearch('')
     setFilterStatut('Tous')
-    setFilterPaiement('Tous')
-    setFilterPeriode('Toutes')
+    setPage(1)
   }
 
-  const handleBulkAction = (action) => {
-    if (selectedRows.length === 0) {
-      toast.error('Sélectionnez au moins une commande.')
-      return
-    }
-    const count = selectedRows.length
-    if (action === 'export') toast.success(`${count} commande(s) exportée(s).`)
-    if (action === 'status') toast.success(`Statut mis à jour pour ${count} commande(s).`)
-    setSelectedRows([])
+  const resetArchiveFilters = () => {
+    setArchiveSearch('')
+    setArchiveCategory('Toutes')
+    setArchivePriceMin('')
+    setArchivePriceMax('')
+    setArchivePage(1)
   }
-
-  // Delivery trend bars (static mock)
-  const deliveryBars = [
-    { label: 'LUN', h: 60 },
-    { label: 'MAR', h: 80 },
-    { label: 'MER', h: 95 },
-    { label: 'JEU', h: 70 },
-    { label: 'VEN', h: 85 },
-    { label: 'SAM', h: 45 },
-    { label: 'DIM', h: 30 },
-  ]
 
   return (
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto w-full">
       {/* ── Page Header ── */}
       <PageHeader title="Gestion des commandes">
-        <PageHeader.SecondaryBtn icon="file_download" onClick={() => handleBulkAction('export')}>
-          Exporter
+        <PageHeader.SecondaryBtn icon="refresh" onClick={() => { fetchOrders(); fetchProducts() }}>
+          Actualiser
         </PageHeader.SecondaryBtn>
-        <PageHeader.PrimaryBtn icon="add" onClick={() => toast.info('Création manuelle à venir.')}>
-          Nouvelle commande
-        </PageHeader.PrimaryBtn>
       </PageHeader>
 
       {/* ── KPI Grid ── */}
@@ -265,267 +229,426 @@ export default function Commandes() {
         ))}
       </div>
 
-      {/* ── Filters ── */}
-      <div className="bg-white p-5 rounded-custom border border-slate-200 shadow-sm">
-        <div className="flex flex-col lg:flex-row gap-4">
-        {/* Search */}
-        <div className="relative flex-1">
-          <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-            <span className="material-symbols-outlined text-xl">search</span>
-          </span>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher par nom, email ou ID..."
-            className="block w-full pl-11 pr-4 py-2.5 border border-slate-200 bg-slate-50/50 rounded-custom text-sm focus:ring-brand focus:border-brand transition-all placeholder:text-slate-400 outline-none"
-          />
-        </div>
-
-        {/* Selects */}
-        <div className="flex flex-wrap gap-3">
-        <CustomSelect value={filterPeriode} onChange={setFilterPeriode} options={periodeOptions} size="sm" className="min-w-[150px]" />
-        <CustomSelect value={filterStatut} onChange={setFilterStatut} options={statutOptions} size="sm" className="min-w-[150px]" />
-        <CustomSelect value={filterPaiement} onChange={setFilterPaiement} options={paiementOptions} size="sm" className="min-w-[150px]" />
+      {/* ── Tabs ── */}
+      <div className="flex items-center gap-1 border-b border-slate-200">
         <button
-          onClick={resetFilters}
-          className="p-2.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-custom transition-colors"
-          title="Réinitialiser"
+          onClick={() => setActiveTab('actives')}
+          className={`px-5 py-3 text-sm font-bold transition-colors relative ${
+            activeTab === 'actives'
+              ? 'text-brand after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-brand'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
         >
-          <span className="material-symbols-outlined text-lg">restart_alt</span>
+          <span className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">receipt_long</span>
+            Commandes actives
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeTab === 'actives' ? 'bg-brand/10 text-brand' : 'bg-slate-100 text-slate-500'}`}>
+              {activeOrders.length}
+            </span>
+          </span>
         </button>
-        </div>
-        </div>
+        <button
+          onClick={() => setActiveTab('archive')}
+          className={`px-5 py-3 text-sm font-bold transition-colors relative ${
+            activeTab === 'archive'
+              ? 'text-brand after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-brand'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">inventory_2</span>
+            Archive
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeTab === 'archive' ? 'bg-brand/10 text-brand' : 'bg-slate-100 text-slate-500'}`}>
+              {archivedOrders.length}
+            </span>
+          </span>
+        </button>
       </div>
 
-      {/* ── Bulk actions bar ── */}
-      {selectedRows.length > 0 && (
-        <div className="bg-brand/5 border border-brand/20 rounded-custom p-4 flex items-center justify-between">
-          <span className="text-sm font-bold text-brand">
-            {selectedRows.length} commande(s) sélectionnée(s)
-          </span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleBulkAction('status')}
-              className="px-4 py-2 bg-btn text-white text-xs font-bold rounded-lg hover:bg-btn-dark transition-colors"
-            >
-              Changer statut
-            </button>
-            <button
-              onClick={() => handleBulkAction('export')}
-              className="px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-50 transition-colors"
-            >
-              Exporter sélection
-            </button>
-            <button
-              onClick={() => setSelectedRows([])}
-              className="px-4 py-2 text-slate-500 text-xs font-bold hover:text-slate-700 transition-colors"
-            >
-              Annuler
-            </button>
+      {/* ══════════════════════════════════════ ACTIVE ORDERS TAB ══════════════════════════════════════ */}
+      {activeTab === 'actives' && (
+        <>
+          {/* ── Filters ── */}
+          <div className="bg-white p-5 rounded-custom border border-slate-200 shadow-sm">
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="relative flex-1">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                  <span className="material-symbols-outlined text-xl">search</span>
+                </span>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+                  placeholder="Rechercher par référence, nom ou email..."
+                  className="block w-full pl-11 pr-4 py-2.5 border border-slate-200 bg-slate-50/50 rounded-custom text-sm focus:ring-brand focus:border-brand transition-all placeholder:text-slate-400 outline-none"
+                />
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <CustomSelect value={filterStatut} onChange={(v) => { setFilterStatut(v); setPage(1) }} options={statutOptions} size="sm" className="min-w-[150px]" />
+                <button
+                  onClick={resetFilters}
+                  className="p-2.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-custom transition-colors"
+                  title="Réinitialiser"
+                >
+                  <span className="material-symbols-outlined text-lg">restart_alt</span>
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+
+          {/* ── Bulk actions bar ── */}
+          {selectedRows.length > 0 && (
+            <div className="bg-brand/5 border border-brand/20 rounded-custom p-4 flex items-center justify-between">
+              <span className="text-sm font-bold text-brand">
+                {selectedRows.length} commande(s) sélectionnée(s)
+              </span>
+              <button
+                onClick={() => setSelectedRows([])}
+                className="px-4 py-2 text-slate-500 text-xs font-bold hover:text-slate-700 transition-colors"
+              >
+                Annuler
+              </button>
+            </div>
+          )}
+
+          {/* ── Orders Table ── */}
+          <div className="bg-white rounded-custom border border-slate-200 shadow-sm overflow-hidden">
+            {loading ? (
+              <div className="py-20 text-center text-slate-400">
+                <span className="material-symbols-outlined text-4xl mb-2 block animate-spin">progress_activity</span>
+                <p className="font-medium">Chargement...</p>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider font-bold">
+                      <tr>
+                        <th className="px-4 py-4 w-10">
+                          <input
+                            type="checkbox"
+                            checked={selectedRows.length === paginated.length && paginated.length > 0}
+                            onChange={toggleAll}
+                            className="rounded border-slate-300 text-brand focus:ring-brand"
+                          />
+                        </th>
+                        <th className="px-5 py-4">Référence</th>
+                        <th className="px-5 py-4">Client</th>
+                        <th className="px-5 py-4">Paiement</th>
+                        <th className="px-5 py-4">Statut</th>
+                        <th className="px-5 py-4 text-right">Total</th>
+                        <th className="px-5 py-4">Date</th>
+                        <th className="px-5 py-4 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginated.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="py-16 text-center text-slate-400">
+                            <span className="material-symbols-outlined text-4xl mb-2 block">search_off</span>
+                            <p className="font-medium">Aucune commande trouvée</p>
+                          </td>
+                        </tr>
+                      ) : (
+                        paginated.map((o) => (
+                          <tr
+                            key={o.id}
+                            className={`group hover:bg-slate-50 transition-colors cursor-pointer border-b border-slate-100 last:border-none ${
+                              selectedRows.includes(o.id) ? 'bg-brand/5' : ''
+                            }`}
+                            onClick={() => navigate(`/commandes/${o.id}`)}
+                          >
+                            <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                              <input
+                                type="checkbox"
+                                checked={selectedRows.includes(o.id)}
+                                onChange={() => toggleRow(o.id)}
+                                className="rounded border-slate-300 text-brand focus:ring-brand"
+                              />
+                            </td>
+                            <td className="px-5 py-4">
+                              <span className="font-bold text-brand text-sm">{o.reference}</span>
+                            </td>
+                            <td className="px-5 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 flex-shrink-0">
+                                  {getInitials(o.firstName, o.lastName)}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-bold text-slate-800 text-sm truncate">{o.firstName} {o.lastName}</p>
+                                  <p className="text-[11px] text-slate-400 truncate">{o.email}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-5 py-4">
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold font-badge bg-amber-100 text-amber-800">
+                                Espèces
+                              </span>
+                            </td>
+                            <td className="px-5 py-4">
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold font-badge ${STATUS_BG[o.status] || 'bg-slate-100 text-slate-600'}`}>
+                                {STATUS_LABELS[o.status] || o.status}
+                              </span>
+                            </td>
+                            <td className="px-5 py-4 text-right font-extrabold text-slate-800 text-sm">
+                              {(o.total || 0).toFixed(2)} DT
+                            </td>
+                            <td className="px-5 py-4 text-sm text-slate-500">{formatDate(o.createdAt)}</td>
+                            <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-center gap-1">
+                                <button
+                                  onClick={() => navigate(`/commandes/${o.id}`)}
+                                  className="p-2 text-brand hover:bg-brand/10 rounded-lg transition-colors"
+                                  title="Voir détails"
+                                >
+                                  <span className="material-symbols-outlined text-lg">visibility</span>
+                                </button>
+                                {(o.status === 'LIVREE' || o.status === 'ANNULEE') && (
+                                  <button
+                                    onClick={() => archiveManually(o.id)}
+                                    className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                                    title="Archiver maintenant"
+                                  >
+                                    <span className="material-symbols-outlined text-lg">inventory_2</span>
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                  <p className="text-xs text-slate-500 font-medium">
+                    Affichage de {paginated.length} sur {filtered.length} commandes
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setPage(Math.max(1, page - 1))}
+                      disabled={page === 1}
+                      className="p-2 rounded-lg hover:bg-slate-200 disabled:opacity-40 transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-sm">chevron_left</span>
+                    </button>
+                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setPage(p)}
+                        className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
+                          page === p
+                            ? 'bg-brand text-white shadow-sm'
+                            : 'text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setPage(Math.min(totalPages, page + 1))}
+                      disabled={page === totalPages}
+                      className="p-2 rounded-lg hover:bg-slate-200 disabled:opacity-40 transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-sm">chevron_right</span>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </>
       )}
 
-      {/* ── Orders Table ── */}
-      <div className="bg-white rounded-custom border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider font-bold">
-              <tr>
-                <th className="px-4 py-4 w-10">
-                  <input
-                    type="checkbox"
-                    checked={selectedRows.length === filtered.length && filtered.length > 0}
-                    onChange={toggleAll}
-                    className="rounded border-slate-300 text-brand focus:ring-brand"
-                  />
-                </th>
-                <th className="px-5 py-4">ID Commande</th>
-                <th className="px-5 py-4">Client</th>
-                <th className="px-5 py-4">Paiement</th>
-                <th className="px-5 py-4">Statut</th>
-                <th className="px-5 py-4">Livraison</th>
-                <th className="px-5 py-4 text-right">Total</th>
-                <th className="px-5 py-4">Date</th>
-                <th className="px-5 py-4 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="py-16 text-center text-slate-400">
-                    <span className="material-symbols-outlined text-4xl mb-2 block">search_off</span>
-                    <p className="font-medium">Aucune commande trouvée</p>
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((c) => (
-                  <tr
-                    key={c.id}
-                    className={`group hover:bg-slate-50 transition-colors cursor-pointer border-b border-slate-100 last:border-none ${
-                      selectedRows.includes(c.id) ? 'bg-brand/5' : ''
-                    }`}
-                    onClick={() => navigate(`/commandes/${c.id.replace('#ORD-', '')}`)}
-                  >
-                    <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={selectedRows.includes(c.id)}
-                        onChange={() => toggleRow(c.id)}
-                        className="rounded border-slate-300 text-brand focus:ring-brand"
-                      />
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-brand text-sm">{c.id}</span>
-                        {c.urgent && (
-                          <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" title="Urgent" />
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 flex-shrink-0">
-                          {c.initials}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-slate-800 text-sm truncate">{c.client}</p>
-                          <p className="text-[11px] text-slate-400 truncate">{c.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold font-badge ${c.paiementBg}`}>
-                        {c.paiement}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold font-badge ${c.statutBg}`}>
-                        {c.statut}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold font-badge ${c.livraisonBg}`}>
-                        {c.livraison}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-right font-extrabold text-slate-800 text-sm">
-                      {c.total}
-                    </td>
-                    <td className="px-5 py-4 text-sm text-slate-500">{c.date}</td>
-                    <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-center gap-1">
-                        <button
-                          onClick={() => navigate(`/commandes/${c.id.replace('#ORD-', '')}`)}
-                          className="p-2 text-brand hover:bg-brand/10 rounded-lg transition-colors"
-                          title="Voir détails"
-                        >
-                          <span className="material-symbols-outlined text-lg">visibility</span>
-                        </button>
-                        <button
-                          onClick={() => toast.info(`Impression de ${c.id}`)}
-                          className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"
-                          title="Imprimer"
-                        >
-                          <span className="material-symbols-outlined text-lg">print</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-          <p className="text-xs text-slate-500 font-medium">
-            Affichage de {filtered.length} sur 1 284 commandes
-          </p>
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page === 1}
-              className="p-2 rounded-lg hover:bg-slate-200 disabled:opacity-40 transition-colors"
-            >
-              <span className="material-symbols-outlined text-sm">chevron_left</span>
-            </button>
-            {[1, 2, 3].map((p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
-                  page === p
-                    ? 'bg-brand text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
-            <button
-              onClick={() => setPage(Math.min(3, page + 1))}
-              disabled={page === 3}
-              className="p-2 rounded-lg hover:bg-slate-200 disabled:opacity-40 transition-colors"
-            >
-              <span className="material-symbols-outlined text-sm">chevron_right</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Bottom Insight Cards ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Delivery trends */}
-        <div className="lg:col-span-2 bg-white rounded-custom border border-slate-200 shadow-sm p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h4 className="font-bold text-slate-800">Tendances de livraison</h4>
-              <p className="text-xs text-slate-400 mt-0.5">Commandes expédiées cette semaine</p>
-            </div>
-            <span className="material-symbols-outlined text-brand">insights</span>
-          </div>
-          <div className="h-44 w-full flex items-end gap-3 px-2">
-            {deliveryBars.map((bar) => (
-              <div key={bar.label} className="flex-1 flex flex-col items-center gap-2">
-                <div
-                  className={`w-full rounded-t-lg transition-all ${
-                    bar.h === Math.max(...deliveryBars.map((b) => b.h))
-                      ? 'bg-brand'
-                      : 'bg-brand/20'
-                  }`}
-                  style={{ height: `${bar.h}%` }}
+      {/* ══════════════════════════════════════ ARCHIVE TAB ══════════════════════════════════════ */}
+      {activeTab === 'archive' && (
+        <>
+          {/* ── Archive Filters ── */}
+          <div className="bg-white p-5 rounded-custom border border-slate-200 shadow-sm space-y-4">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Filtres de l'archive</p>
+            <div className="flex flex-col lg:flex-row gap-4">
+              {/* Search */}
+              <div className="relative flex-1">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                  <span className="material-symbols-outlined text-xl">search</span>
+                </span>
+                <input
+                  type="text"
+                  value={archiveSearch}
+                  onChange={(e) => { setArchiveSearch(e.target.value); setArchivePage(1) }}
+                  placeholder="Rechercher par référence ou nom..."
+                  className="block w-full pl-11 pr-4 py-2.5 border border-slate-200 bg-slate-50/50 rounded-custom text-sm focus:ring-brand focus:border-brand transition-all placeholder:text-slate-400 outline-none"
                 />
-                <span className="text-[10px] font-bold text-slate-500">{bar.label}</span>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Urgent CTA */}
-        <div className="bg-brand rounded-custom p-6 flex flex-col justify-between text-white shadow-sm">
-          <div>
-            <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-4">
-              <span className="material-symbols-outlined text-2xl">bolt</span>
+              {/* Category filter */}
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-slate-400 text-xl">category</span>
+                <select
+                  value={archiveCategory}
+                  onChange={(e) => { setArchiveCategory(e.target.value); setArchivePage(1) }}
+                  className="border border-slate-200 bg-slate-50/50 rounded-custom px-3 py-2.5 text-sm text-slate-700 focus:ring-brand focus:border-brand outline-none"
+                >
+                  {archiveCategories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+              {/* Price range */}
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-slate-400 text-xl">payments</span>
+                <input
+                  type="number"
+                  value={archivePriceMin}
+                  onChange={(e) => { setArchivePriceMin(e.target.value); setArchivePage(1) }}
+                  placeholder="Prix min"
+                  min="0"
+                  className="w-28 border border-slate-200 bg-slate-50/50 rounded-custom px-3 py-2.5 text-sm focus:ring-brand focus:border-brand outline-none"
+                />
+                <span className="text-slate-400 text-sm">—</span>
+                <input
+                  type="number"
+                  value={archivePriceMax}
+                  onChange={(e) => { setArchivePriceMax(e.target.value); setArchivePage(1) }}
+                  placeholder="Prix max"
+                  min="0"
+                  className="w-28 border border-slate-200 bg-slate-50/50 rounded-custom px-3 py-2.5 text-sm focus:ring-brand focus:border-brand outline-none"
+                />
+              </div>
+              <button
+                onClick={resetArchiveFilters}
+                className="p-2.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-custom transition-colors"
+                title="Réinitialiser les filtres"
+              >
+                <span className="material-symbols-outlined text-lg">restart_alt</span>
+              </button>
             </div>
-            <h4 className="text-lg font-bold mb-2">Traitement Rapide</h4>
-            <p className="text-sm text-white/70 leading-relaxed">
-              Vous avez <span className="font-bold text-white">3 commandes urgentes</span> à valider pour expédition avant 14h00.
-            </p>
           </div>
-          <button
-            onClick={() => {
-              setFilterStatut('En attente')
-              toast.info('Filtre appliqué : commandes en attente.')
-            }}
-            className="w-full mt-6 py-3 bg-white text-brand rounded-xl font-bold text-sm hover:bg-slate-50 transition-colors"
-          >
-            Accéder aux urgences
-          </button>
-        </div>
-      </div>
+
+          {/* ── Archive Table ── */}
+          <div className="bg-white rounded-custom border border-slate-200 shadow-sm overflow-hidden">
+            {loading ? (
+              <div className="py-20 text-center text-slate-400">
+                <span className="material-symbols-outlined text-4xl mb-2 block animate-spin">progress_activity</span>
+                <p className="font-medium">Chargement...</p>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider font-bold">
+                      <tr>
+                        <th className="px-5 py-4">Référence</th>
+                        <th className="px-5 py-4">Client</th>
+                        <th className="px-5 py-4">Statut</th>
+                        <th className="px-5 py-4 text-right">Total</th>
+                        <th className="px-5 py-4">Date</th>
+                        <th className="px-5 py-4 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {archivedPaginated.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="py-16 text-center text-slate-400">
+                            <span className="material-symbols-outlined text-4xl mb-2 block">inventory_2</span>
+                            <p className="font-medium">
+                              {archivedOrders.length === 0
+                                ? 'Aucune commande archivée pour le moment'
+                                : 'Aucune commande ne correspond aux filtres'}
+                            </p>
+                          </td>
+                        </tr>
+                      ) : (
+                        archivedPaginated.map((o) => (
+                          <tr
+                            key={o.id}
+                            className="group hover:bg-slate-50 transition-colors cursor-pointer border-b border-slate-100 last:border-none"
+                            onClick={() => navigate(`/commandes/${o.id}`)}
+                          >
+                            <td className="px-5 py-4">
+                              <span className="font-bold text-brand text-sm">{o.reference}</span>
+                            </td>
+                            <td className="px-5 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 flex-shrink-0">
+                                  {getInitials(o.firstName, o.lastName)}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-bold text-slate-800 text-sm truncate">{o.firstName} {o.lastName}</p>
+                                  <p className="text-[11px] text-slate-400 truncate">{o.email}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-5 py-4">
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold font-badge ${STATUS_BG[o.status] || 'bg-slate-100 text-slate-600'}`}>
+                                {STATUS_LABELS[o.status] || o.status}
+                              </span>
+                            </td>
+                            <td className="px-5 py-4 text-right font-extrabold text-slate-800 text-sm">
+                              {(o.total || 0).toFixed(2)} DT
+                            </td>
+                            <td className="px-5 py-4 text-sm text-slate-500">{formatDate(o.createdAt)}</td>
+                            <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-center gap-1">
+                                <button
+                                  onClick={() => navigate(`/commandes/${o.id}`)}
+                                  className="p-2 text-brand hover:bg-brand/10 rounded-lg transition-colors"
+                                  title="Voir détails"
+                                >
+                                  <span className="material-symbols-outlined text-lg">visibility</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Archive Pagination */}
+                {archivedOrders.length > 0 && (
+                  <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                    <p className="text-xs text-slate-500 font-medium">
+                      Affichage de {archivedPaginated.length} sur {filteredArchived.length} commandes archivées
+                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => setArchivePage(Math.max(1, archivePage - 1))}
+                        disabled={archivePage === 1}
+                        className="p-2 rounded-lg hover:bg-slate-200 disabled:opacity-40 transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-sm">chevron_left</span>
+                      </button>
+                      {Array.from({ length: Math.min(archiveTotalPages, 5) }, (_, i) => i + 1).map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => setArchivePage(p)}
+                          className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
+                            archivePage === p
+                              ? 'bg-brand text-white shadow-sm'
+                              : 'text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => setArchivePage(Math.min(archiveTotalPages, archivePage + 1))}
+                        disabled={archivePage === archiveTotalPages}
+                        className="p-2 rounded-lg hover:bg-slate-200 disabled:opacity-40 transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-sm">chevron_right</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </>
+      )}
     </div>
   )
 }

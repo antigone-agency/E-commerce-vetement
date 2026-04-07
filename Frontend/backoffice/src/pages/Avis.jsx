@@ -1,52 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { toast } from 'react-toastify'
+import apiClient from '../api/apiClient'
 import PageHeader from '../components/ui/PageHeader'
 import KpiCard from '../components/ui/KpiCard'
 import CustomSelect from '../components/ui/CustomSelect'
-
-// ── Mock Data ──────────────────────────────────────────────────────────────────
-const initialAvis = [
-  {
-    id: 1, client: 'Jean Dupont', initials: 'JD', produit: 'Veste Haute Visibilité',
-    note: 5, commentaire: 'Excellent produit, très résistant pour le chantier.', date: '12/10/2023',
-    statut: 'Approuvé', reponse: '',
-  },
-  {
-    id: 2, client: 'Marie Claire', initials: 'MC', produit: 'Chaussures de sécurité S3',
-    note: 4, commentaire: 'Confortables mais un peu lourdes.', date: '11/10/2023',
-    statut: 'Approuvé', reponse: '',
-  },
-  {
-    id: 3, client: 'Lucas Martin', initials: 'LM', produit: 'Pantalon de travail Cargo',
-    note: 3, commentaire: 'La taille est un peu petite, je recommande de prendre une taille au-dessus.', date: '10/10/2023',
-    statut: 'En attente', reponse: '',
-  },
-  {
-    id: 4, client: 'Sophie Bernard', initials: 'SB', produit: 'Gants anti-coupure',
-    note: 1, commentaire: 'Publicité non sollicitée dans le colis.', date: '09/10/2023',
-    statut: 'Spam', reponse: '',
-  },
-  {
-    id: 5, client: 'Pierre Moreau', initials: 'PM', produit: 'Casque de chantier Pro',
-    note: 5, commentaire: 'Parfait ! Léger et conforme aux normes EN 397.', date: '08/10/2023',
-    statut: 'Approuvé', reponse: 'Merci pour votre retour Pierre !',
-  },
-  {
-    id: 6, client: 'Camille Roux', initials: 'CR', produit: 'Bottes de sécurité imperméables',
-    note: 4, commentaire: 'Très bonnes bottes, pieds au sec même sous la pluie.', date: '07/10/2023',
-    statut: 'Approuvé', reponse: '',
-  },
-  {
-    id: 7, client: 'Thomas Leroy', initials: 'TL', produit: 'Gilet de signalisation',
-    note: 2, commentaire: 'La couture s\'est défaite après 2 semaines d\'utilisation.', date: '06/10/2023',
-    statut: 'En attente', reponse: '',
-  },
-  {
-    id: 8, client: 'Emma Garnier', initials: 'EG', produit: 'Combinaison jetable',
-    note: 5, commentaire: 'Idéal pour la peinture, bon rapport qualité-prix.', date: '05/10/2023',
-    statut: 'Approuvé', reponse: '',
-  },
-]
 
 const statutOptions = ['Tous les statuts', 'Approuvé', 'En attente', 'Spam']
 const noteOptions = ['Toutes les notes', '5 étoiles', '4 étoiles', '3 étoiles', '2 étoiles', '1 étoile']
@@ -58,7 +15,6 @@ const statutBadge = {
   'Spam':       'bg-red-100 text-red-700',
 }
 
-// ── Stars component ────────────────────────────────────────────────────────────
 function Stars({ note }) {
   return (
     <div className="flex justify-center text-amber-400">
@@ -69,8 +25,15 @@ function Stars({ note }) {
   )
 }
 
+function formatDate(iso) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
 export default function Avis() {
-  const [avis, setAvis] = useState(initialAvis)
+  const [avis, setAvis] = useState([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterStatut, setFilterStatut] = useState('Tous les statuts')
   const [filterNote, setFilterNote] = useState('Toutes les notes')
@@ -78,12 +41,33 @@ export default function Avis() {
   const [page, setPage] = useState(1)
   const perPage = 10
 
-  // ── Modal réponse ──
   const [replyAvis, setReplyAvis] = useState(null)
   const [replyText, setReplyText] = useState('')
-
-  // ── Modal détail ──
   const [detailAvis, setDetailAvis] = useState(null)
+
+  useEffect(() => { fetchAvis() }, [])
+
+  const fetchAvis = async () => {
+    try {
+      setLoading(true)
+      const { data } = await apiClient.get('/admin/reviews')
+      setAvis(data.map(r => ({
+        id: r.id,
+        client: r.clientName || 'Client',
+        initials: r.clientInitials || '??',
+        produit: r.productName || 'Produit',
+        note: r.note,
+        commentaire: r.commentaire || '',
+        date: formatDate(r.createdAt),
+        statut: r.statut,
+        reponse: r.reponse || '',
+      })))
+    } catch {
+      toast.error('Erreur lors du chargement des avis')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // ── Filtering ──
   const filtered = avis.filter(a => {
@@ -109,19 +93,28 @@ export default function Avis() {
   const noteMoyenne = total > 0 ? (avis.reduce((s, a) => s + a.note, 0) / total).toFixed(1) : '0.0'
 
   // ── Actions ──
-  const approuver = (id) => {
-    setAvis(prev => prev.map(a => a.id === id ? { ...a, statut: 'Approuvé' } : a))
-    toast.success('Avis approuvé.')
+  const approuver = async (id) => {
+    try {
+      await apiClient.patch(`/admin/reviews/${id}/statut`, { statut: 'Approuvé' })
+      setAvis(prev => prev.map(a => a.id === id ? { ...a, statut: 'Approuvé' } : a))
+      toast.success('Avis approuvé.')
+    } catch { toast.error('Erreur') }
   }
 
-  const marquerSpam = (id) => {
-    setAvis(prev => prev.map(a => a.id === id ? { ...a, statut: 'Spam' } : a))
-    toast.success('Avis marqué comme spam.')
+  const marquerSpam = async (id) => {
+    try {
+      await apiClient.patch(`/admin/reviews/${id}/statut`, { statut: 'Spam' })
+      setAvis(prev => prev.map(a => a.id === id ? { ...a, statut: 'Spam' } : a))
+      toast.success('Avis marqué comme spam.')
+    } catch { toast.error('Erreur') }
   }
 
-  const supprimer = (id) => {
-    setAvis(prev => prev.filter(a => a.id !== id))
-    toast.success('Avis supprimé.')
+  const supprimer = async (id) => {
+    try {
+      await apiClient.delete(`/admin/reviews/${id}`)
+      setAvis(prev => prev.filter(a => a.id !== id))
+      toast.success('Avis supprimé.')
+    } catch { toast.error('Erreur') }
   }
 
   const openReply = (a) => {
@@ -129,11 +122,14 @@ export default function Avis() {
     setReplyText(a.reponse || '')
   }
 
-  const submitReply = () => {
+  const submitReply = async () => {
     if (!replyText.trim()) return toast.error('Veuillez écrire une réponse.')
-    setAvis(prev => prev.map(a => a.id === replyAvis.id ? { ...a, reponse: replyText.trim() } : a))
-    setReplyAvis(null)
-    toast.success('Réponse enregistrée.')
+    try {
+      await apiClient.patch(`/admin/reviews/${replyAvis.id}/reponse`, { reponse: replyText.trim() })
+      setAvis(prev => prev.map(a => a.id === replyAvis.id ? { ...a, reponse: replyText.trim() } : a))
+      setReplyAvis(null)
+      toast.success('Réponse enregistrée.')
+    } catch { toast.error('Erreur') }
   }
 
   const resetFilters = () => {
@@ -202,7 +198,21 @@ export default function Avis() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {paginated.map(a => (
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-slate-400 text-sm">
+                    <span className="material-symbols-outlined text-4xl text-slate-200 mb-2 block animate-spin">progress_activity</span>
+                    Chargement des avis...
+                  </td>
+                </tr>
+              ) : paginated.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-slate-400 text-sm">
+                    <span className="material-symbols-outlined text-4xl text-slate-200 mb-2 block">reviews</span>
+                    Aucun avis ne correspond aux filtres.
+                  </td>
+                </tr>
+              ) : paginated.map(a => (
                 <tr key={a.id} className="hover:bg-slate-50/50 transition-colors group">
                   {/* Client */}
                   <td className="px-6 py-3.5">
@@ -269,14 +279,6 @@ export default function Avis() {
                   </td>
                 </tr>
               ))}
-              {paginated.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-400 text-sm">
-                    <span className="material-symbols-outlined text-4xl text-slate-200 mb-2 block">reviews</span>
-                    Aucun avis ne correspond aux filtres.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>

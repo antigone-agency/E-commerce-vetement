@@ -7,7 +7,6 @@ const navItems = [
   { path: '/commandes',      label: 'Commandes',         icon: 'shopping_cart',    moduleKey: 'COMMANDES' },
   { path: '/retours',        label: 'Retours',           icon: 'assignment_return',moduleKey: 'RETOURS' },
   { path: '/clients',        label: 'Clients',           icon: 'group',            moduleKey: 'CLIENTS' },
-  { path: '/analyses',       label: 'Analyses',          icon: 'analytics',        moduleKey: 'ANALYSES' },
   { path: '/collections',    label: 'Collections',       icon: 'category',         moduleKey: 'COLLECTIONS' },
   { path: '/categories',     label: 'Catégories',        icon: 'folder',           moduleKey: 'CATEGORIES' },
   { path: '/bannieres',      label: 'Bannières',         icon: 'view_carousel',    moduleKey: 'BANNIERES' },

@@ -3,21 +3,23 @@ package com.ecommerce.service;
 import com.ecommerce.dto.request.CollectionRequest;
 import com.ecommerce.dto.response.CollectionResponse;
 import com.ecommerce.entity.Collection;
+import com.ecommerce.entity.Product;
 import com.ecommerce.repository.CollectionRepository;
+import com.ecommerce.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.text.Normalizer;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class CollectionService {
 
     private final CollectionRepository collectionRepository;
+    private final ProductRepository productRepository;
 
     private static final String SEPARATOR = "||";
 
@@ -50,7 +52,19 @@ public class CollectionService {
     @Transactional(readOnly = true)
     public CollectionResponse getCollectionById(Long id) {
         Collection collection = findOrThrow(id);
-        return mapToResponse(collection);
+        CollectionResponse response = mapToResponse(collection);
+        response.setProductIds(findProductIdsByCollectionName(collection.getNom()));
+        return response;
+    }
+
+    // ── Get collection by slug (public) ────────────────────────────────
+    @Transactional(readOnly = true)
+    public CollectionResponse getCollectionBySlug(String slug) {
+        Collection collection = collectionRepository.findBySlug(slug)
+                .orElseThrow(() -> new IllegalArgumentException("Collection introuvable: " + slug));
+        CollectionResponse response = mapToResponse(collection);
+        response.setProductIds(findProductIdsByCollectionName(collection.getNom()));
+        return response;
     }
 
     // ── Create collection ──────────────────────────────────────────────
@@ -90,13 +104,17 @@ public class CollectionService {
                 .build();
 
         collection = collectionRepository.save(collection);
-        return mapToResponse(collection);
+        syncProductCollections(collection.getNom(), request.getProductIds());
+        CollectionResponse response = mapToResponse(collection);
+        response.setProductIds(request.getProductIds() != null ? request.getProductIds() : Collections.emptyList());
+        return response;
     }
 
     // ── Update collection ──────────────────────────────────────────────
     @Transactional
     public CollectionResponse updateCollection(Long id, CollectionRequest request) {
         Collection collection = findOrThrow(id);
+        String oldName = collection.getNom();
 
         String slug = generateSlug(request.getSlug(), request.getNom());
         if (!collection.getSlug().equals(slug) && collectionRepository.existsBySlug(slug)) {
@@ -129,13 +147,24 @@ public class CollectionService {
         collection.setMetaDescription(request.getMetaDescription());
 
         collection = collectionRepository.save(collection);
-        return mapToResponse(collection);
+
+        // If the collection name changed, update old references first
+        if (!oldName.equals(collection.getNom())) {
+            renameCollectionInProducts(oldName, collection.getNom());
+        }
+        syncProductCollections(collection.getNom(), request.getProductIds());
+
+        CollectionResponse response = mapToResponse(collection);
+        response.setProductIds(findProductIdsByCollectionName(collection.getNom()));
+        return response;
     }
 
     // ── Delete collection ──────────────────────────────────────────────
     @Transactional
     public void deleteCollection(Long id) {
         Collection collection = findOrThrow(id);
+        // Remove the collection name from all products
+        removeCollectionFromAllProducts(collection.getNom());
         collectionRepository.delete(collection);
     }
 
@@ -197,5 +226,81 @@ public class CollectionService {
                 .createdAt(c.getCreatedAt())
                 .updatedAt(c.getUpdatedAt())
                 .build();
+    }
+
+    // ── Product-Collection sync helpers ─────────────────────────────────
+
+    private List<Long> findProductIdsByCollectionName(String collectionName) {
+        return productRepository.findAll().stream()
+                .filter(p -> hasCollection(p.getCollections(), collectionName))
+                .map(Product::getId)
+                .toList();
+    }
+
+    private void syncProductCollections(String collectionName, List<Long> productIds) {
+        if (productIds == null)
+            return;
+
+        Set<Long> wantedIds = new HashSet<>(productIds);
+
+        // Get all products and update their collections field
+        List<Product> allProducts = productRepository.findAll();
+        for (Product p : allProducts) {
+            boolean has = hasCollection(p.getCollections(), collectionName);
+            boolean wanted = wantedIds.contains(p.getId());
+            if (wanted && !has) {
+                p.setCollections(addCollection(p.getCollections(), collectionName));
+                productRepository.save(p);
+            } else if (!wanted && has) {
+                p.setCollections(removeCollection(p.getCollections(), collectionName));
+                productRepository.save(p);
+            }
+        }
+    }
+
+    private void removeCollectionFromAllProducts(String collectionName) {
+        List<Product> allProducts = productRepository.findAll();
+        for (Product p : allProducts) {
+            if (hasCollection(p.getCollections(), collectionName)) {
+                p.setCollections(removeCollection(p.getCollections(), collectionName));
+                productRepository.save(p);
+            }
+        }
+    }
+
+    private void renameCollectionInProducts(String oldName, String newName) {
+        List<Product> allProducts = productRepository.findAll();
+        for (Product p : allProducts) {
+            if (hasCollection(p.getCollections(), oldName)) {
+                String updated = removeCollection(p.getCollections(), oldName);
+                updated = addCollection(updated, newName);
+                p.setCollections(updated);
+                productRepository.save(p);
+            }
+        }
+    }
+
+    private boolean hasCollection(String collections, String name) {
+        if (collections == null || collections.isBlank())
+            return false;
+        return Arrays.stream(collections.split(","))
+                .map(String::trim)
+                .anyMatch(c -> c.equalsIgnoreCase(name));
+    }
+
+    private String addCollection(String collections, String name) {
+        if (collections == null || collections.isBlank())
+            return name;
+        return collections + "," + name;
+    }
+
+    private String removeCollection(String collections, String name) {
+        if (collections == null || collections.isBlank())
+            return null;
+        String result = Arrays.stream(collections.split(","))
+                .map(String::trim)
+                .filter(c -> !c.equalsIgnoreCase(name))
+                .collect(Collectors.joining(","));
+        return result.isEmpty() ? null : result;
     }
 }

@@ -40,10 +40,20 @@ public class DataSeeder implements CommandLineRunner {
         @Override
         @Transactional
         public void run(String... args) {
+                migrateSchema();
                 seedRoles();
                 seedSegments();
                 seedSuperAdmin();
                 seedTvaAndShipping();
+        }
+
+        private void migrateSchema() {
+                // Fix NULL values for new boolean columns added by ddl-auto=update
+                jdbcTemplate.execute(
+                        "UPDATE products SET pinned_in_sub_category = false WHERE pinned_in_sub_category IS NULL");
+                // Drop deprecated column if it still exists
+                jdbcTemplate.execute(
+                        "ALTER TABLE products DROP COLUMN IF EXISTS visible_landing");
         }
 
         private void seedRoles() {

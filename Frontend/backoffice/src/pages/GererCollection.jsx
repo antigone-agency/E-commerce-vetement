@@ -6,6 +6,7 @@ import CustomSelect from '../components/ui/CustomSelect'
 import PageHeader from '../components/ui/PageHeader'
 import { collectionApi } from '../api/collectionApi'
 import { categoryApi } from '../api/categoryApi'
+import { productApi } from '../api/productApi'
 
 // ── Reusable helpers ──────────────────────────────────────────────────────────
 
@@ -103,6 +104,8 @@ export default function GererCollection() {
   // Produits (Manuel mode)
   const [selectedProducts, setSelectedProducts] = useState([])
   const [productSearch, setProductSearch] = useState('')
+  const [allProducts, setAllProducts] = useState([])
+  const [loadingProducts, setLoadingProducts] = useState(false)
 
   // Existing collections for priority selector
   const [existingCollections, setExistingCollections] = useState([])
@@ -113,7 +116,8 @@ export default function GererCollection() {
       collectionApi.getById(id),
       categoryApi.getAll(),
       collectionApi.getAll(),
-    ]).then(([col, cats, allCols]) => {
+      productApi.getAll(),
+    ]).then(([col, cats, allCols, products]) => {
       setNom(col.nom || '')
       setSlug(col.slug || '')
       setDescription(col.description || '')
@@ -137,6 +141,12 @@ export default function GererCollection() {
       setMetaDescription(col.metaDescription || '')
       setAllCategories(cats)
       setExistingCollections(allCols)
+      setAllProducts(products)
+      // Pre-select products already linked to this collection
+      if (col.productIds && col.productIds.length > 0) {
+        const linked = products.filter(p => col.productIds.includes(p.id))
+        setSelectedProducts(linked)
+      }
     }).catch(() => {
       toast.error('Erreur lors du chargement')
       navigate('/collections')
@@ -148,6 +158,11 @@ export default function GererCollection() {
     const rootNames = allCategories.filter(c => !c.parentId).map(c => c.nom)
     setMenuParentCategory(linkedCategories.find(name => rootNames.includes(name)) || '')
   }, [linkedCategories, allCategories])
+
+  // ── Compute same-category collections count (excluding current) ──
+  const sameCatCollections = menuParentCategory
+    ? existingCollections.filter(c => c.menuParentCategory === menuParentCategory && String(c.id) !== String(id))
+    : existingCollections.filter(c => String(c.id) !== String(id))
 
   // ── Image handlers ───────────────────────────────────────────────────
   const processFile = useCallback((file) => {
@@ -218,6 +233,7 @@ export default function GererCollection() {
         menuFeatured,
         dateDebut: dateDebut || null, dateFin: dateFin || null,
         linkedCategories, metaTitle, metaDescription,
+        productIds: selectedProducts.map(p => p.id),
       })
       toast.success('Collection mise à jour !')
       navigate('/collections')
@@ -512,7 +528,27 @@ export default function GererCollection() {
           </div>
 
           {/* ── Produits de la collection (Manuel uniquement) ──────── */}
-          {type === 'manuel' && (
+          {type === 'manuel' && (() => {
+            // Get category IDs from linkedCategories names
+            const linkedCatIds = linkedCategories.map(name => allCategories.find(c => c.nom === name)?.id).filter(Boolean)
+            const childCatIds = linkedCatIds.filter(id => { const cat = allCategories.find(c => c.id === id); return cat && cat.parentId })
+            const rootCatIds = linkedCatIds.filter(id => { const cat = allCategories.find(c => c.id === id); return cat && !cat.parentId })
+            // Available = products matching selected categories, not already selected
+            const selectedIds = new Set(selectedProducts.map(p => p.id))
+            const availableProducts = allProducts.filter(p => {
+              if (selectedIds.has(p.id)) return false
+              if (linkedCatIds.length === 0) return false
+              if (childCatIds.length > 0) return childCatIds.includes(p.categoryId)
+              return rootCatIds.includes(p.categoryId) || rootCatIds.includes(p.parentCategoryId)
+            })
+            const q = productSearch.toLowerCase().trim()
+            const filteredAvailable = q ? availableProducts.filter(p => p.nom.toLowerCase().includes(q)) : availableProducts
+            const getProductImage = (p) => {
+              if (p.imageUrl) return p.imageUrl
+              try { const ci = JSON.parse(p.colorImages || '{}'); const firstKey = Object.keys(ci)[0]; return ci[firstKey]?.[0] || null } catch { return null }
+            }
+
+            return (
           <div className="bg-white rounded-custom border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -535,41 +571,83 @@ export default function GererCollection() {
                 />
               </div>
 
-              {/* Selected products list */}
-              {selectedProducts.length > 0 ? (
-                <div className="space-y-2">
-                  {selectedProducts.map((p, idx) => (
-                    <div key={idx} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 group">
-                      <div className="w-10 h-10 rounded-lg bg-slate-200 overflow-hidden flex-shrink-0 border border-slate-200">
-                        {p.image ? (
-                          <img src={p.image} alt={p.nom} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <span className="material-symbols-outlined text-slate-400 text-sm">image</span>
+              {/* Available products to add */}
+              {filteredAvailable.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    Produits disponibles ({filteredAvailable.length})
+                  </p>
+                  <div className="max-h-60 overflow-y-auto space-y-1 border border-slate-200 rounded-lg p-2">
+                    {filteredAvailable.map((p) => {
+                      const img = getProductImage(p)
+                      return (
+                        <div key={p.id} onClick={() => setSelectedProducts(prev => [...prev, p])}
+                          className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-brand/5 cursor-pointer transition-all group">
+                          <div className="w-8 h-8 rounded-md bg-slate-200 overflow-hidden flex-shrink-0 border border-slate-200">
+                            {img ? (
+                              <img src={img} alt={p.nom} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <span className="material-symbols-outlined text-slate-400 text-xs">image</span>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-slate-800 truncate">{p.nom}</p>
-                        {p.prix && <p className="text-[10px] text-slate-500">{p.prix} DT</p>}
-                      </div>
-                      <button type="button" onClick={() => removeProduct(idx)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100">
-                        <span className="material-symbols-outlined text-sm">close</span>
-                      </button>
-                    </div>
-                  ))}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-700 truncate">{p.nom}</p>
+                            <p className="text-[10px] text-slate-400">{p.parentCategoryNom ? `${p.parentCategoryNom} › ` : ''}{p.categoryNom} · {p.salePrice} DT</p>
+                          </div>
+                          <span className="material-symbols-outlined text-brand text-lg opacity-0 group-hover:opacity-100 transition-opacity">add_circle</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Selected products */}
+              {selectedProducts.length > 0 ? (
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    Produits sélectionnés ({selectedProducts.length})
+                  </p>
+                  <div className="space-y-2">
+                    {selectedProducts.map((p) => {
+                      const img = getProductImage(p)
+                      return (
+                        <div key={p.id} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 group">
+                          <div className="w-10 h-10 rounded-lg bg-slate-200 overflow-hidden flex-shrink-0 border border-slate-200">
+                            {img ? (
+                              <img src={img} alt={p.nom} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <span className="material-symbols-outlined text-slate-400 text-sm">image</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-slate-800 truncate">{p.nom}</p>
+                            <p className="text-[10px] text-slate-500">{p.parentCategoryNom ? `${p.parentCategoryNom} › ` : ''}{p.categoryNom} · {p.salePrice} DT</p>
+                          </div>
+                          <button type="button" onClick={() => setSelectedProducts(prev => prev.filter(x => x.id !== p.id))}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100">
+                            <span className="material-symbols-outlined text-sm">close</span>
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               ) : (
                 <div className="py-8 flex flex-col items-center text-center">
                   <span className="material-symbols-outlined text-4xl text-slate-200 mb-3">inventory_2</span>
                   <p className="text-sm font-medium text-slate-400">Aucun produit ajouté</p>
-                  <p className="text-[10px] text-slate-400 mt-1">Le module Produits n'est pas encore disponible.<br/>Les produits pourront être ajoutés ultérieurement.</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Sélectionnez des catégories ci-dessus puis choisissez<br/>les produits à inclure dans cette collection.</p>
                 </div>
               )}
             </div>
           </div>
-          )}
+            )
+          })()}
 
           {/* ── Statut ─────────────────────────────────────────────── */}
           <div className="bg-white rounded-custom border border-slate-200 shadow-sm overflow-hidden">
@@ -602,7 +680,7 @@ export default function GererCollection() {
                 <div>
                   <Label>Position</Label>
                   <div className="flex flex-wrap gap-2">
-                    {Array.from({ length: Math.max(existingCollections.length, Number(priorite) || 0) }, (_, i) => i + 1).map((pos) => (
+                    {Array.from({ length: Math.max(sameCatCollections.length + 1, Number(priorite) || 0) }, (_, i) => i + 1).map((pos) => (
                       <button
                         key={pos}
                         type="button"
@@ -618,7 +696,7 @@ export default function GererCollection() {
                     ))}
                   </div>
                   <p className="text-[10px] text-slate-400 mt-1">
-                    {existingCollections.length} collection{existingCollections.length > 1 ? 's' : ''} existante{existingCollections.length > 1 ? 's' : ''}
+                    {sameCatCollections.length} collection{sameCatCollections.length > 1 ? 's' : ''} existante{sameCatCollections.length > 1 ? 's' : ''}{menuParentCategory ? ` sous ${menuParentCategory}` : ''}
                   </p>
                 </div>
               </div>

@@ -147,6 +147,7 @@ public class AuthService {
                 .address(user.getAddress())
                 .city(user.getCity())
                 .postalCode(user.getPostalCode())
+                .gouvernorat(user.getGouvernorat())
                 .country(user.getCountry())
                 .status(user.getStatus())
                 .segmentName(user.getSegment() != null ? user.getSegment().getName() : null)

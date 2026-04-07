@@ -2,6 +2,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
 import axios from 'axios'
 import { useFoAppearance } from '../../context/AppearanceContext'
+import { useCart } from '../../context/CartContext'
 
 /* ── Fallback data (used while API loads or if it fails) ── */
 const fallbackCategoryData = {
@@ -65,6 +66,7 @@ const defaultImages = [
 export default function Header() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { itemCount } = useCart()
   const [showMenu, setShowMenu] = useState(false)
   const [showNav, setShowNav] = useState(false)
   const [animKey, setAnimKey] = useState(0)
@@ -76,6 +78,7 @@ export default function Header() {
   const [categoryData, setCategoryData] = useState(fallbackCategoryData)
   const [mainCategories, setMainCategories] = useState(fallbackMainCategories)
   const [activeCategory, setActiveCategory] = useState(fallbackMainCategories[0] || 'FEMME')
+  const [rawCategories, setRawCategories] = useState([])
 
   // Collections for menu
   const [menuCollections, setMenuCollections] = useState([])
@@ -88,14 +91,16 @@ export default function Header() {
         const apiCats = res.data
         if (!apiCats || apiCats.length === 0) return // keep fallback
 
+        setRawCategories(apiCats)
         const built = {}
         apiCats.forEach(cat => {
           const name = cat.nom.toUpperCase()
-          const subs = (cat.children || []).map(c => c.nom)
+          const subs = (cat.children || []).map(c => ({ nom: c.nom, slug: c.slug }))
           const img = cat.imageUrl
           built[name] = {
+            slug: cat.slug,
             season: `SEASON 2026 / ${name}`,
-            subs: subs.length > 0 ? subs : ['Tout Voir'],
+            subs: subs.length > 0 ? subs : [{ nom: 'Tout Voir', slug: null }],
             images: img
               ? [{ src: img, title: name, sub: 'DÉCOUVRIR' }, defaultImages[1]]
               : defaultImages,
@@ -175,13 +180,13 @@ export default function Header() {
   const displayImages = (() => {
     if (featuredCollections.length >= 2) {
       return [
-        { src: featuredCollections[0].imageUrl || defaultImages[0].src, title: featuredCollections[0].nom, sub: 'DÉCOUVRIR' },
-        { src: featuredCollections[1].imageUrl || defaultImages[1].src, title: featuredCollections[1].nom, sub: 'THE LOOKBOOK' },
+        { src: featuredCollections[0].imageUrl || defaultImages[0].src, title: featuredCollections[0].nom, sub: 'DÉCOUVRIR', slug: featuredCollections[0].slug },
+        { src: featuredCollections[1].imageUrl || defaultImages[1].src, title: featuredCollections[1].nom, sub: 'THE LOOKBOOK', slug: featuredCollections[1].slug },
       ]
     }
     if (featuredCollections.length === 1) {
       return [
-        { src: featuredCollections[0].imageUrl || defaultImages[0].src, title: featuredCollections[0].nom, sub: 'DÉCOUVRIR' },
+        { src: featuredCollections[0].imageUrl || defaultImages[0].src, title: featuredCollections[0].nom, sub: 'DÉCOUVRIR', slug: featuredCollections[0].slug },
         current.images[1] || defaultImages[1],
       ]
     }
@@ -358,8 +363,13 @@ export default function Header() {
             )}
           </div>
 
-          <button className="flex items-center hover:opacity-60" onClick={() => navigate('/panier')}>
+          <button className="relative flex items-center hover:opacity-60" onClick={() => navigate('/panier')}>
             <span className={`material-symbols-outlined text-[20px] transition-colors duration-500 ${isTransparent ? 'text-white' : 'text-primary'}`}>shopping_bag</span>
+            {itemCount > 0 && (
+              <span className="absolute -top-1.5 -right-2 bg-red-600 text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full leading-none">
+                {itemCount > 9 ? '9+' : itemCount}
+              </span>
+            )}
           </button>
 
           {/* Menu toggle (hamburger / close) */}
@@ -384,7 +394,7 @@ export default function Header() {
                   key={cat}
                   href="#"
                   onMouseEnter={() => handleCategoryHover(cat)}
-                  onClick={(e) => { e.preventDefault(); setShowNav(false); navigate('/produits') }}
+                  onClick={(e) => { e.preventDefault(); setShowNav(false); navigate(`/produits/${categoryData[cat]?.slug?.replace(/^\//, '') || cat.toLowerCase()}`) }}
                   className={`font-headline font-black text-4xl md:text-5xl tracking-tighter transition-colors duration-300 ${
                     activeCategory === cat ? 'text-primary' : 'text-outline-variant hover:text-primary'
                   }`}
@@ -405,16 +415,21 @@ export default function Header() {
             <div key={animKey} className="animate-nav-fade-in">
               <h2 className="text-[10px] tracking-[0.2em] font-label text-outline mb-8 uppercase">{current.season}</h2>
               <nav className="flex flex-col space-y-4 text-sm font-label tracking-widest uppercase">
-                {current.subs.map((sub, i) => (
+                {current.subs.map((sub, i) => {
+                  const subObj = typeof sub === 'string' ? { nom: sub, slug: null } : sub
+                  const parentSlug = (current.slug || activeCategory.toLowerCase()).replace(/^\//, '')
+                  const subSlug = subObj.slug ? subObj.slug.replace(/^\//, '') : null
+                  return (
                   <a
-                    key={sub}
+                    key={subObj.nom}
                     href="#"
-                    onClick={(e) => e.preventDefault()}
+                    onClick={(e) => { e.preventDefault(); setShowNav(false); navigate(subSlug ? `/produits/${parentSlug}/${subSlug}` : `/produits/${parentSlug}`) }}
                     className="transition-colors duration-200 text-on-surface/70 hover:text-primary hover:font-bold"
                   >
-                    {sub}
+                    {subObj.nom}
                   </a>
-                ))}
+                  )
+                })}
                 {categoryCollections.length > 0 && (
                   <>
                     {categoryCollections.map((col) => (
@@ -423,7 +438,7 @@ export default function Header() {
                         href="#"
                         onMouseEnter={() => setHoveredCollection(col)}
                         onMouseLeave={() => setHoveredCollection(null)}
-                        onClick={(e) => { e.preventDefault(); setShowNav(false); navigate('/produits') }}
+                        onClick={(e) => { e.preventDefault(); setShowNav(false); navigate(`/collection/${col.slug}`) }}
                         className={`transition-colors duration-200 ${
                           hoveredCollection?.id === col.id ? 'text-primary font-bold' : 'text-on-surface/70 hover:text-primary'
                         }`}
@@ -434,7 +449,7 @@ export default function Header() {
                   </>
                 )}
                 <div className="pt-8">
-                  <a href="#" onClick={(e) => e.preventDefault()} className="text-[10px] tracking-[0.2em] border-b border-primary pb-1 inline-block">VIEW ALL</a>
+                  <a href="#" onClick={(e) => { e.preventDefault(); setShowNav(false); navigate(`/produits/${(current.slug || activeCategory.toLowerCase()).replace(/^\//, '')}`) }} className="text-[10px] tracking-[0.2em] border-b border-primary pb-1 inline-block">VIEW ALL</a>
                 </div>
               </nav>
             </div>
@@ -443,7 +458,12 @@ export default function Header() {
           {/* Column 3: Editorial Images (changes on hover) */}
           <section className="w-full md:w-2/4 grid grid-cols-1 md:grid-cols-2 gap-4 md:pl-12">
             {displayImages.map((img, i) => (
-              <div key={`${animKey}-${i}`} className="relative aspect-[3/4] group cursor-pointer overflow-hidden bg-surface-container-high animate-nav-image-in" style={{ animationDelay: `${i * 100}ms` }}>
+              <div
+                key={`${animKey}-${i}`}
+                className="relative aspect-[3/4] group cursor-pointer overflow-hidden bg-surface-container-high animate-nav-image-in"
+                style={{ animationDelay: `${i * 100}ms` }}
+                onClick={() => { if (img.slug) { setShowNav(false); navigate(`/collection/${img.slug}`) } }}
+              >
                 <img
                   className="w-full h-full object-cover grayscale brightness-90 group-hover:scale-105 transition-transform duration-700"
                   src={img.src}

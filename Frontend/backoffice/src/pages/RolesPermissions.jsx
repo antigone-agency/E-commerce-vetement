@@ -12,7 +12,6 @@ const MODULE_LABELS = {
   COMMANDES:          'Commandes',
   RETOURS:            'Retours',
   CLIENTS:            'Clients',
-  ANALYSES:           'Analyses',
   COLLECTIONS:        'Collections',
   CATEGORIES:         'Catégories',
   BANNIERES:          'Bannières',
@@ -27,7 +26,7 @@ const MODULE_LABELS = {
 
 // ── Section grouping for the matrix ────────────────────────────────────────────
 const MODULE_SECTIONS = [
-  { title: 'Navigation principale', icon: 'menu', keys: ['TABLEAU_DE_BORD', 'PRODUITS', 'COMMANDES', 'RETOURS', 'CLIENTS', 'ANALYSES', 'COLLECTIONS', 'CATEGORIES', 'BANNIERES', 'TVA_LIVRAISON'] },
+  { title: 'Navigation principale', icon: 'menu', keys: ['TABLEAU_DE_BORD', 'PRODUITS', 'COMMANDES', 'RETOURS', 'CLIENTS', 'COLLECTIONS', 'CATEGORIES', 'BANNIERES', 'TVA_LIVRAISON'] },
   { title: 'Marketing',             icon: 'campaign', keys: ['PROMOTIONS', 'EMAIL_MARKETING', 'AVIS'] },
   { title: 'Paramètres',            icon: 'settings', keys: ['APPARENCE', 'ROLES_PERMISSIONS', 'COMPTE_HEBERGEMENT'] },
 ]

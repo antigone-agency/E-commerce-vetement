@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { AppearanceProvider } from './context/AppearanceContext'
+import { CartProvider } from './context/CartContext'
 import Layout from './components/layout/Layout'
 import Home from './pages/Home'
 import Cart from './pages/Cart'
@@ -14,6 +15,7 @@ import Signup from './pages/Signup'
 export default function App() {
   return (
     <AppearanceProvider>
+      <CartProvider>
       <BrowserRouter>
         <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} theme="colored" />
         <Routes>
@@ -27,10 +29,14 @@ export default function App() {
             <Route path="/panier" element={<Cart />} />
             <Route path="/profil" element={<Profile />} />
             <Route path="/produits" element={<Products />} />
+            <Route path="/produits/:categorySlug" element={<Products />} />
+            <Route path="/produits/:categorySlug/:subCategorySlug" element={<Products />} />
+            <Route path="/collection/:collectionSlug" element={<Products />} />
             <Route path="/produit/:slug" element={<ProductDetail />} />
           </Route>
         </Routes>
       </BrowserRouter>
+      </CartProvider>
     </AppearanceProvider>
   )
 }

@@ -8,6 +8,107 @@ import Spinner from '../components/ui/Spinner'
 
 const devises = ['Dinar Tunisien (DT)']
 
+const GOUVERNORATS = [
+  'Tunis', 'Ariana', 'Ben Arous', 'Manouba',
+  'Nabeul', 'Zaghouan', 'Bizerte',
+  'Béja', 'Jendouba', 'Le Kef', 'Siliana',
+  'Sousse', 'Monastir', 'Mahdia',
+  'Sfax', 'Kairouan', 'Kasserine', 'Sidi Bouzid',
+  'Gabès', 'Médenine', 'Tataouine',
+  'Gafsa', 'Tozeur', 'Kébili',
+]
+
+const GRAND_TUNIS = ['Tunis', 'Ariana', 'Ben Arous', 'Manouba']
+
+/* Converts comma string to Set of trimmed values */
+function parseRegions(str) {
+  return new Set((str || '').split(',').map(s => s.trim()).filter(Boolean))
+}
+
+/* Multi-select checkbox dropdown for governorates */
+function RegionsPicker({ value, onChange }) {
+  const [open, setOpen] = useState(false)
+  const selected = parseRegions(value)
+
+  const toggle = (gov) => {
+    const next = new Set(selected)
+    if (next.has(gov)) next.delete(gov)
+    else next.add(gov)
+    onChange([...next].join(', '))
+  }
+
+  const applyPreset = (list) => {
+    const next = new Set(selected)
+    list.forEach(g => next.add(g))
+    onChange([...next].join(', '))
+  }
+
+  const selectAll = () => onChange(GOUVERNORATS.join(', '))
+  const clearAll = () => onChange('')
+
+  return (
+    <div className="relative">
+      {/* Trigger button */}
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:ring-brand focus:border-brand outline-none text-left"
+      >
+        <span className={selected.size === 0 ? 'text-slate-400' : 'text-slate-700'}>
+          {selected.size === 0
+            ? 'Sélectionner les régions'
+            : selected.size === GOUVERNORATS.length
+              ? 'Tous les gouvernorats'
+              : [...selected].join(', ')}
+        </span>
+        <svg className={`w-4 h-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg">
+          {/* Preset + controls */}
+          <div className="px-3 py-2 border-b border-slate-100 flex flex-wrap gap-2">
+            <button type="button" onClick={() => applyPreset(GRAND_TUNIS)}
+              className="text-[11px] font-semibold px-2 py-1 rounded bg-blue-50 text-blue-700 hover:bg-blue-100">
+              + Grand Tunis
+            </button>
+            <button type="button" onClick={selectAll}
+              className="text-[11px] font-semibold px-2 py-1 rounded bg-slate-100 text-slate-600 hover:bg-slate-200">
+              Tout sélectionner
+            </button>
+            <button type="button" onClick={clearAll}
+              className="text-[11px] font-semibold px-2 py-1 rounded bg-slate-100 text-slate-500 hover:bg-slate-200">
+              Effacer
+            </button>
+          </div>
+          {/* Governorate checkboxes */}
+          <div className="max-h-52 overflow-y-auto px-2 py-2 grid grid-cols-2 gap-0.5">
+            {GOUVERNORATS.map(gov => (
+              <label key={gov} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-slate-50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selected.has(gov)}
+                  onChange={() => toggle(gov)}
+                  className="w-3.5 h-3.5 rounded accent-blue-600"
+                />
+                <span className="text-sm text-slate-700">{gov}</span>
+              </label>
+            ))}
+          </div>
+          <div className="px-3 py-2 border-t border-slate-100 flex justify-end">
+            <button type="button" onClick={() => setOpen(false)}
+              className="text-xs font-semibold px-3 py-1.5 rounded bg-btn text-white hover:bg-btn-dark">
+              Confirmer ({selected.size})
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function TvaLivraison() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -165,10 +266,12 @@ export default function TvaLivraison() {
 
   /* ═══════════ Zones handlers ═══════════ */
   const handleAddZone = async () => {
-    if (!newZone.nom.trim() || !newZone.regions.trim()) return toast.error('Veuillez remplir les champs requis.')
+    if (!newZone.regions.trim()) return toast.error('Veuillez sélectionner au moins une région.')
+    const autoNom = newZone.regions.split(',').map(s => s.trim()).filter(Boolean).join(' / ')
     try {
       const res = await apiClient.post('/admin/tva-shipping/zones', {
         ...newZone,
+        nom: autoNom,
         cout: parseFloat(newZone.cout) || 0,
       })
       setZones(prev => [...prev, res.data])
@@ -186,10 +289,12 @@ export default function TvaLivraison() {
   }
 
   const handleEditZone = async () => {
-    if (!editZoneData.nom.trim() || !editZoneData.regions.trim()) return toast.error('Veuillez remplir les champs requis.')
+    if (!editZoneData.regions.trim()) return toast.error('Veuillez sélectionner au moins une région.')
+    const autoNom = editZoneData.regions.split(',').map(s => s.trim()).filter(Boolean).join(' / ')
     try {
       const res = await apiClient.put(`/admin/tva-shipping/zones/${editZone.id}`, {
         ...editZoneData,
+        nom: autoNom,
         cout: parseFloat(editZoneData.cout) || 0,
       })
       setZones(prev => prev.map(z => z.id === editZone.id ? res.data : z))
@@ -337,7 +442,6 @@ export default function TvaLivraison() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-100">
-                <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">Zone</th>
                 <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">Régions</th>
                 <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">Méthode</th>
                 <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">Estimation</th>
@@ -349,8 +453,7 @@ export default function TvaLivraison() {
             <tbody className="divide-y divide-slate-100">
               {zones.map(z => (
                 <tr key={z.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="px-6 py-3.5 font-semibold text-sm text-slate-800">{z.nom}</td>
-                  <td className="px-6 py-3.5 text-sm text-slate-500">{z.regions}</td>
+                  <td className="px-6 py-3.5 font-semibold text-sm text-slate-800">{z.regions}</td>
                   <td className="px-6 py-3.5 text-sm">{z.methode}</td>
                   <td className="px-6 py-3.5 text-sm">{z.estimation}</td>
                   <td className="px-6 py-3.5 text-sm font-bold">{z.cout?.toFixed(2)} {currencySymbol}</td>
@@ -504,12 +607,8 @@ export default function TvaLivraison() {
             <h3 className="text-lg font-bold text-slate-800">Ajouter une zone de livraison</h3>
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-600">Nom de la zone *</label>
-                <input type="text" value={newZone.nom} onChange={e => setNewZone({ ...newZone, nom: e.target.value })} placeholder="Ex : Sahel" className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:ring-brand focus:border-brand outline-none" />
-              </div>
-              <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-600">Régions couvertes *</label>
-                <input type="text" value={newZone.regions} onChange={e => setNewZone({ ...newZone, regions: e.target.value })} placeholder="Ex : Sousse, Monastir, Mahdia" className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:ring-brand focus:border-brand outline-none" />
+                <RegionsPicker value={newZone.regions} onChange={v => setNewZone({ ...newZone, regions: v })} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -518,7 +617,16 @@ export default function TvaLivraison() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-600">Estimation</label>
-                  <input type="text" value={newZone.estimation} onChange={e => setNewZone({ ...newZone, estimation: e.target.value })} placeholder="Ex : 2-3 jours" className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:ring-brand focus:border-brand outline-none" />
+                  <select value={newZone.estimation} onChange={e => setNewZone({ ...newZone, estimation: e.target.value })} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:ring-brand focus:border-brand outline-none">
+                    <option value="">— Sélectionner —</option>
+                    <option value="Livraison le jour même">Livraison le jour même</option>
+                    <option value="24h">24h</option>
+                    <option value="1-2 jours">1-2 jours</option>
+                    <option value="2-3 jours">2-3 jours</option>
+                    <option value="3-5 jours">3-5 jours</option>
+                    <option value="5-7 jours">5-7 jours</option>
+                    <option value="7 jours">7 jours (max)</option>
+                  </select>
                 </div>
               </div>
               <div className="space-y-2">
@@ -541,12 +649,8 @@ export default function TvaLivraison() {
             <h3 className="text-lg font-bold text-slate-800">Modifier la zone de livraison</h3>
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-600">Nom de la zone *</label>
-                <input type="text" value={editZoneData.nom} onChange={e => setEditZoneData({ ...editZoneData, nom: e.target.value })} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:ring-brand focus:border-brand outline-none" />
-              </div>
-              <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-600">Régions couvertes *</label>
-                <input type="text" value={editZoneData.regions} onChange={e => setEditZoneData({ ...editZoneData, regions: e.target.value })} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:ring-brand focus:border-brand outline-none" />
+                <RegionsPicker value={editZoneData.regions} onChange={v => setEditZoneData({ ...editZoneData, regions: v })} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -555,7 +659,16 @@ export default function TvaLivraison() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-600">Estimation</label>
-                  <input type="text" value={editZoneData.estimation} onChange={e => setEditZoneData({ ...editZoneData, estimation: e.target.value })} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:ring-brand focus:border-brand outline-none" />
+                  <select value={editZoneData.estimation} onChange={e => setEditZoneData({ ...editZoneData, estimation: e.target.value })} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:ring-brand focus:border-brand outline-none">
+                    <option value="">— Sélectionner —</option>
+                    <option value="Livraison le jour même">Livraison le jour même</option>
+                    <option value="24h">24h</option>
+                    <option value="1-2 jours">1-2 jours</option>
+                    <option value="2-3 jours">2-3 jours</option>
+                    <option value="3-5 jours">3-5 jours</option>
+                    <option value="5-7 jours">5-7 jours</option>
+                    <option value="7 jours">7 jours (max)</option>
+                  </select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">

@@ -31,20 +31,28 @@ function applyFoAppearance(data) {
   }
 }
 
+// Fields shared between scopes — backoffice values are used as fallback when frontoffice is empty
+const SHARED_FIELDS = ['brandName', 'slogan', 'instagram', 'facebook', 'linkedin', 'whatsapp', 'phone', 'email', 'domain']
+
 export function AppearanceProvider({ children }) {
   const [appearance, setAppearance] = useState({ ...DEFAULTS, loaded: false })
 
   useEffect(() => {
-    fetch(`${BASE_URL}/public/appearance/frontoffice`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        const merged = { ...DEFAULTS, ...(data || {}), loaded: true }
-        setAppearance(merged)
-        applyFoAppearance(merged)
-      })
-      .catch(() => {
-        setAppearance(prev => ({ ...prev, loaded: true }))
-      })
+    Promise.all([
+      fetch(`${BASE_URL}/public/appearance/frontoffice`).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(`${BASE_URL}/public/appearance/backoffice`).then(r => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([fo, bo]) => {
+      const merged = { ...DEFAULTS, ...(fo || {}) }
+      // Fall back to backoffice values for shared fields if frontoffice has them empty
+      if (bo) {
+        for (const field of SHARED_FIELDS) {
+          if (!merged[field] && bo[field]) merged[field] = bo[field]
+        }
+      }
+      merged.loaded = true
+      setAppearance(merged)
+      applyFoAppearance(merged)
+    })
   }, [])
 
   return (

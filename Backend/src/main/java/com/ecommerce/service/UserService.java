@@ -221,6 +221,8 @@ public class UserService {
             user.setCity(request.getCity());
         if (request.getPostalCode() != null)
             user.setPostalCode(request.getPostalCode());
+        if (request.getGouvernorat() != null)
+            user.setGouvernorat(request.getGouvernorat());
         if (request.getCountry() != null)
             user.setCountry(request.getCountry());
 

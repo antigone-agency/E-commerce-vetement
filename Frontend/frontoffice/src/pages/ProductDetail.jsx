@@ -1,246 +1,335 @@
-import { useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useState, useEffect, useMemo } from 'react'
+import { useParams, Link, useNavigate } from 'react-router-dom'
+import { toast } from 'react-toastify'
+import axios from 'axios'
+import { useCart } from '../context/CartContext'
 
-/* ── All products data (shared source of truth) ── */
-const allProducts = [
-  {
-    id: 1, slug: 'robe-soie-minimaliste',
-    name: 'Robe Longue en Soie', collection: 'Nouvelle Collection', price: '280 DT',
-    colorName: 'Noir Profond',
-    colors: ['#000000', '#d6cec4', '#9e9e9e'],
-    sizes: ['XS', 'S', 'M', 'L', 'XL'],
-    description: 'Robe longue fluide confectionnée dans une soie de mûrier de haute qualité. Coupe asymétrique, décolleté plongeant et finitions invisibles pour une allure architecturale et épurée.',
-    composition: '100% Soie de mûrier. Doublure en cupro. Lavage à sec recommandé.',
-    shipping: 'Livraison standard gratuite (3-5 jours ouvrables). Retours offerts sous 30 jours.',
-    images: [
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBRUbUTWjh6vtDyy4Q_buLXeSmUAA9iYWzocxRhysVa6IMCXvzL6qWg9Pn1DlaSR0aJKKNkBCkCrRgZb5RudlFPpNqtsIJ1l7X4XlZjmr5cq2d_zX_-KPtrYVDWjesj7foRhHSFWNTsbYjrbmdOnVLXH2Fr-pMTI45j4ZbT6WiDUSXnVSgEA0XxcaqyAdS-Ge0I2XRURaTcIAv3B2na1NnrJ3c1tv8DYiVacwRXtY2fhCqqrhyRDz8xqUSFq6qFD1gregRfsdljGVVn',
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBGMeK5qM-VKFogvrkOnblGVR4F1kg2g0X-rj6d-d9Ln5MNPaYkK1nLCSOzJhpMZRHIW7XFK3SfOSwnZEUJUJ6W6go6vO9fnP7-21Ze3sUjSmpI8E43VOz5eqj7bvafuEZTJdTNDsLqe1naG_g9f-AMgCxBEjm7khFxiSzLCGm37idYv8DB-zuIAOZF-ooo-cuJaOwoyq877dptbN-Ga7YOUwY8jpVteqa3yg1BanOOcM8Bhl2bTy0MpOsK2TKDp3PTihw-hNTJ7tdg',
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDut3lfd_6tKaNkgE6cpBeKCRLHuNdLo23NnB8RgJJfz_nwmnUfptuo1C446qOjtclLF1Lu5zQWwvTP0C2ktdRCWJgbrJNfV-000DYRzhtfWrnnn12MQT1dBebORfwVR6sg9wSbq_0wcmUK4MRDAkTrhuxCFb1Ueup_oYLO5IryPEDIpuz11B7jsYXx7RSHFLL1TkL1odcDyJYlpxOjEJzt7pxDo609hz5sC6SSKFmG_X6pkv_m3owcFZ5wCWAw4Pd7c-ol9eYTEclm',
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuAYiCwjF0qTXXgd8ibaC8Ki1BLwq7szu5pKjBCCDvKL9DMTZ_PiQPK6Yx7hhdFHLiOkkS1pQomH88xDJKjDAzgRdts4Gn-aUikpFOsZQv-y0XeXiUtw4OzReylweukNAG3vCOO4T8uCkVi0V_daj7iHvAPRLxskBbTJ4V-lUHqUHzo_wz1LL_f4wIh_6BgQs_X1ksaybuXZ144lQd--IcIzD1_ZSsG6zuxd6y_POQr9WwPxwhdVQMzzNigLhqf577nzQ4Crkw6yddEH',
-    ],
-  },
-  {
-    id: 2, slug: 'chemise-oversize-coton',
-    name: 'Chemise Oversize Coton', collection: 'Essentiels', price: '145 DT',
-    colorName: 'Blanc',
-    colors: ['#ffffff', '#e2e2e2'],
-    sizes: ['XS', 'S', 'M', 'L', 'XL'],
-    description: 'Chemise oversize en coton premium avec coupe décontractée et finitions raffinées. Tissu respirant et léger, idéal pour les looks superposés.',
-    composition: '100% Coton biologique. Lavage en machine à 30°C.',
-    shipping: 'Livraison standard gratuite (3-5 jours ouvrables). Retours offerts sous 30 jours.',
-    images: [
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuB1-bXKWhCL07flnD2XRbGUwK27MpXKxLrFEcPXrEI48d7oT5MXzl2q-gWkmIsPXPG-i6O4QSZqkeMzUiwsANdqeUOC8q_3I1mmk0wjbUEMI4D2cqn13TRLpt0eQosHqx7Tn1AHELmXkVdbdzwhwAfrY8CON_FWuZti7VDyoN2WCHBmWW3ZjR7svvxQhD6JMvzStGP7OFxg4qcprE9eGOAXS23S3vnuoina4rs_THC4TywPOIvVIDjQ8CTC7ThDEd48sXStXTJxZ4M2',
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBJxJGPt0OA_cvOEDIDCobVyGWg5Debkg3jAnkYbqW3VftPhnDG1uWdnxSXp-x76P5wj0GfilbXRF03g6_jMKltdPfi3w8Pu1K9T2Tlan_AkXT98uHebyb9piFmCXjuv3ID92KZoxX6weNYzpKslfTinQdqTqzpBWC0QVCs9EMcpnMaYAttQeD9a_oHXx_V6FXo5f7Ry_OLi21UllXeSSqMwN8aBbyV2VDk0kE5C_ikQVpnECpMfXQFm8jkrWMLfej2UJ2E2ljZHpQF',
-    ],
-  },
-  {
-    id: 3, slug: 'trench-gabardine-structure',
-    name: 'Trench Gabardine Structuré', collection: 'Nouvelle Collection', price: '420 DT',
-    colorName: 'Gris Pierre',
-    colors: ['#adabaa', '#474747'],
-    sizes: ['XS', 'S', 'M', 'L', 'XL'],
-    description: 'Trench en gabardine technique avec structure architecturale. Double boutonnage, ceinture detachable et col surdimensionné pour une silhouette imposante.',
-    composition: '65% Polyester, 35% Coton. Doublure viscose. Nettoyage à sec.',
-    shipping: 'Livraison standard gratuite (3-5 jours ouvrables). Retours offerts sous 30 jours.',
-    images: [
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuAYIxhk5PDZhb3-W19oV-_bn-eFYcI5ZXlk9H9ksJnWMApEi1ADJNmGmHMLnaeSwv8W9GiUJofuooqoMP7f1iv4S4yyZSSScbCqyFzlud1M_PogS5UBni47G_hlcmAx592UcGqszUP2I8SZ6KW_JZVDxKMLHylEhjBNjxpFNylUCkSL03-i7uL03rAue-jcLEKE_2RrrPF6wwwFG1wJYmeSuyeao_BDFkkIAfvL1dsgGI7dqKFNVSd_F0okdKhWPDOydUTnkFYe_HSH',
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDUATeJ0ZRPlm49COh58qLWBpvdCQJF4SUZJmjtt0RsAEcvpmUjr6260affFPDB3Mf84u4gWbhsV_q2SYI1KxnaIjZfD-7Z0QfD2i16wEe97aCSHF2aO7F57Y2chA3UCgs2CfQ0-AqTvErT0Wtj1wQXw6F03VDI-alEnH7iwFsoW3QM8jtntnJXlL-bQvHsTF-S7VwqobZim3kpfQ7HMZZtueYIGMf1x9dLY8e2Kt3REbLoM8AJw4TBa3lcxZNSEUbt5KkNQwLk9TwD',
-    ],
-  },
-  {
-    id: 4, slug: 'pantalon-large-laine',
-    name: 'Pantalon Large Laine', collection: 'Essentiels', price: '190 DT',
-    colorName: 'Anthracite',
-    colors: ['#474747', '#000000'],
-    sizes: ['XS', 'S', 'M', 'L', 'XL'],
-    description: 'Pantalon large en laine mérinos avec pli permanent. Taille haute, coupe fluide et tombé impeccable pour une allure contemporaine.',
-    composition: '100% Laine mérinos. Doublure polyester. Nettoyage à sec.',
-    shipping: 'Livraison standard gratuite (3-5 jours ouvrables). Retours offerts sous 30 jours.',
-    images: [
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuA-k36kV7TPM31RxnnZi5YPSv9sV_yQxpuYZl3H_7d5HRXXof9ZADnZOJOORk4oSo1cvuijGnCitnZVA3Nftt3MLoomRkpMs8Fp8f_IUr_tCeg5xM-Od918A51kmJSbFT4jR16M4u2eyJnKnGqmGEqcURaTjFJm-KD-I8mvDK18SQk7N_nFY5coX3Z706-T9Ref95tlnqUxANB8K1o-fj4TsfEbMh-V8FTNtp6_IYn4yqH-YgDioLwFd0BB4bByB23vwB-yj9EurG7M',
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuAMCQaqukLrN4LPY6Ddhj87XTqrlTAIbXlzkV4I2RDzTIudm9pD0mxnv6QMFzesXJDHI7qC1RtF0SQAqCmVCSN849Y6uQv_uQBn8UMFPZXaXisymMAz5YlFtKPuvkQpijohD5yVCtkju3r8v3rTEWYD1JDWX6Umb4dhWJxw1myz9jMtc-nmJ3NHB_EwQSFbVSNBzRmNWTQuwx5h_tt34YTZUXNW2FFddnFVD-lat7AR0ei6lzIWY04x7L--i4I7bbnLSXIOh7VWcxDX',
-    ],
-  },
-  {
-    id: 5, slug: 'top-fluide-imprime',
-    name: 'Top Fluide Imprimé', collection: 'Printemps-Été', price: '85 DT',
-    colorName: 'Écru',
-    colors: ['#e2e2e2'],
-    sizes: ['XS', 'S', 'M', 'L'],
-    description: 'Top fluide à imprimé floral délicat. Coupe ample et manches tombantes pour un look sophistiqué et décontracté.',
-    composition: '100% Viscose. Lavage en machine à 30°C.',
-    shipping: 'Livraison standard gratuite (3-5 jours ouvrables). Retours offerts sous 30 jours.',
-    images: [
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuAjqLnyVIbURx-170kFClmuOhHhZPBVeWwM-mq4ly8iEd10jFWJo8_sBJvtTSIgKKh8rV9uyzsXrMeUEr1X0hvh16K5ch5ftld-FFAj9lNlHObB2-xye1U9yAZAipEQqVBGa9UFmdMZSmUOIrdp1jGzJp4vDF70m3njbCmUTpr5weKQKN2O0hlQCyiu1uV070yb1OWnD2nC_-dwV5fOCVAt_0HRU9BQYXo891KQnU9inNENh4pI7JQYQ75A0EDWBh63xA8o3FP6BWeY',
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBQhKkfivL-HieAAgjsv_s6NYVn4nqWoLoCINRph-fJdz0bhYbpuUQoTyla_etUfRRqX6AmszNzHmf3vuFVAeW0k0cdGtJrlW74Ut6O7fvwA-5eokpujxgwRDYzfrSQQVHcAL7EjLJI3Vg2MpTYLhb8GHM0RjeQHMeItnirSrg5OpJvGJ0UU6kKb0UJnlvjs_gcGFG65A8NNbDSJU4iEUxyH2TptuYDXDwV-pnWnDbewhwxWJwTfeGU3OLk3KlzOWilMLd8BI_GGqn7',
-    ],
-  },
-  {
-    id: 6, slug: 'veste-croisee-charcoal',
-    name: 'Veste Croisée Charcoal', collection: 'Essentiels', price: '350 DT',
-    colorName: 'Charcoal',
-    colors: ['#3b3b3c'],
-    sizes: ['XS', 'S', 'M', 'L', 'XL'],
-    description: 'Veste croisée en laine mélangée, coupe cintrée avec épaules structurées. Doublure intérieure en cupro et boutons en corne naturelle.',
-    composition: '80% Laine, 20% Polyamide. Doublure cupro. Nettoyage à sec.',
-    shipping: 'Livraison standard gratuite (3-5 jours ouvrables). Retours offerts sous 30 jours.',
-    images: [
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuAkM6aVE9mwbDwxqKCHnloJzCXQAyiN2H4gBQYUtXpRVytVu5BSB9eMG3LBaG-N9yYOiXLntFp8L0zjobWFXcDM3XbAckMMgiS_GVZqVtBvw8tF2WgUfKrc8NTQMpRfiOnK1_Gk5XwyGqq8L2jHJFlJkuHbi9WxjZx73ECYkNESMrJrGiKrMwXypsT3KSJ3lJXumDUhn2tSX3dLghYBNlcy_sA-rxHgyRI1SsUVUvDErEHBgVWvIQEguKrFf8lLYd9w9_CczUm5rJgm',
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDF-OvGyj4TWLAxfafwhHj-HhDvcDXG48BapiECmH8QN49WYS82Cbqk6CnDTjiPM6x6zbY_V6ENYJpAShW9lNRKRaIsvCTKtHp1W85B3WwAaCZqy7FuHX446aflZtRyX9kYeXQ94I7osOZz-gOFBcRJumhpGlmI_oMGfU2fhnRuzRrMZpAWbyufWzQex59Cl9mN0ZSOvMsE3v7cVMMsSN-FGNJVngL1z9kfGcaO1iENAdAPsdKXigSmyhusXdLu5Vj5V3VP3vIa7PDZ',
-    ],
-  },
-  {
-    id: 7, slug: 'sac-cabas-cuir-graine',
-    name: 'Sac Cabas Cuir Grainé', collection: 'Accessoires', price: '550 DT',
-    colorName: 'Noir',
-    colors: ['#000000'],
-    sizes: ['UNIQUE'],
-    description: 'Sac cabas en cuir de veau grainé avec structure rigide. Intérieur suédé avec poche zippée. Poignées renforcées et fermoir magnétique.',
-    composition: '100% Cuir de veau. Doublure suède. Entretien cuir recommandé.',
-    shipping: 'Livraison standard gratuite (3-5 jours ouvrables). Retours offerts sous 30 jours.',
-    images: [
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuC9zdNGeYA42g1ssyN0P1A90519ujotj9oBWAMKLKFGsDG7Wxh39v2w76MFiIQTr7u5S7ZpTHarqFWYGdCFVYPoQZmuXcUMK6zBCe-aoOfRaLEJ3U5ZsfdVl-zvm6Zm_dn63Ny8RLhu0-IVa8yavl58MyYJVzrWY1srWeGDeT9RknI5cJtTr0wssp89h1vzcZkmvhwgljud-fLvUCplYL5asA9HGT9Jf5IzTUNK8aDAM0bCbfcBuE2Qdq9ObJEUwPNd9efJoaodBjbH',
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuAyHE2TTSh98KhvpoHNw15Vv9nqfomIf9yijJ1bm97F_jD5nOzuEH4d0Ng7UNNRMdG3CK76iE7N1Q-nEcEhfa7mMUZuuVdNn7M0MOxzDLQRhg0Ga_y79yAheaDo9U60KyDQ7G3MSMGbQunDxFAer2aeI-d3kfg_A00DbVBnQLvZ0x8F3BM_YHBNdgkkjIIScJ2SuAlkx0CE7tAIhzHCMXhRYYsulB59di8Eq_5CI83lkzzqONRwl_vYUiZ9WqRoG10lk17EpN7PF8Jc',
-    ],
-  },
-  {
-    id: 8, slug: 'pull-cachemire-epais',
-    name: 'Pull Cachemire Épais', collection: 'Essentiels', price: '295 DT',
-    colorName: 'Perle',
-    colors: ['#e2e2e2', '#adabaa'],
-    sizes: ['XS', 'S', 'M', 'L', 'XL'],
-    description: 'Pull en cachemire épais avec maille côtelée et coupe légèrement oversize. Finitions roulottées et emmanchures tombantes.',
-    composition: '100% Cachemire. Lavage à la main recommandé.',
-    shipping: 'Livraison standard gratuite (3-5 jours ouvrables). Retours offerts sous 30 jours.',
-    images: [
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBJth2A7HL2azpBJAAwM9NgXQcXJKLNka-Erl0U7RnPSJu1v0ZT8bpfwnWVjDhkJDzq3OhdDr9vc0oAtsJmBBsCavBffiu1IGx_EndfN3ROuWKpm0-eppZx_JNLanKJP6gyfsZHSeg8JyZPeiGJ64IAbDaId07aBCrjF7hLF7LgMcX20nnHMe1PRJhMZ2uwxec2RQrAlCTDW3VeP23B6xpAQOL5furhYZ-p7jAiQ2RNhIc1MjsRK4eNfnPRvMzsJOB5SdVTSp1nTNye',
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBMzHS9vvV1T8m2KuY_iwkNT3ha1NeWu90QOjdUlAsa_OET716bpNX9yJB7QkYI_-EYGZED9kdhhzS3Qui-a7SNy3OaNVLLixDFMMUdvXN3PczCmRtPjhZb2Qkx46wVoNybYsJ0D6xa98H9fg49cX8wZNCVaf4bcdhib5m482mwLJHXDnVCrkFvgrmtO_RpmJYZyEfYsUk55LZfuavlqAF_xf-R2oyJKHi9gk5wtkC5PQrBuuL2ph1r7r8-P-pkgAsnpYsc3DdVuSuQ',
-    ],
-  },
-]
+const API = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
 
-const similarProducts = [
-  { name: 'Blazer Structuré', price: '189 DT', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCcPTIe4KpvarIxt541R0Om-eb_9dMd63YtAaFATTIymfU7m026h2PKN4HQYdxuH7e1EKYEvpAd-i3tctnsWUzw88vQbeVJEHRYG01Z1mmm_Gt6SNSEueXdxVpxVC_88hxQHC3sfHZAu4DYRXB_wi5-4snPVt79I7BDU_esq4UfyS78XoqwOy6z_EMiO4-SYpFRgWtONFEOpbGQbGX57xDnul0AZ7kZy71QN712q2_aJMQ0ghaZInP5hlqASaDocq4wQ8yPZEH27zNg' },
-  { name: 'Pantalon Large en Laine', price: '95 DT', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCrkINWGSPeBdQgSF9KZ82vd3891E4467EiXKjBKlOykKNTNrYJfEEeqZ9vCemAAxyFocVikXNeIKi2KY-8w9_NIBd5afEo8Rldq0Lv1PZjcR8cRdUY0dBI1uX9MssfSqXNSwTNG0xGs4726FP8uTwP69F068gyKeZKgk99BQspI3HcALJINBq5wgJ9fMe_0G54GtCdY-vCCYzc76uQCWfMIKZELFx6XZCOqZ4ToOQiZVMmOKJck-_MEdaY4zyxCCYiPiJ9irr91j39' },
-  { name: 'Top en Maille Fine', price: '59 DT', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBKU1mroyKUsGn5c4ReIE1JGodFlFXL2Sovt2OFe5z622gHhqo3VQm4OdDZnR__frw-Lp8_FDTN2d0YR2JKP-e1Qm-RYNJLOfAZvcNMB3EXuuz6SqCYkrIgD0skbfvJLI48zF-nmxTXEA1FSXZPykPyp0RQw0vTxauj8gw53qs1LmGBFRIlAijJXH0Qn1V_lZbShkxZl1zulYWw1JA3cXCzDkqKXr-M7F4b7o-8fLFsYAAmwzCmAIrjLyI-KNTBsXVZ5K6yVc7V-COA' },
-  { name: 'Manteau en Cachemire', price: '450 DT', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuALOc-p7AGF5fuEYdOTzWuwDyHZTUvkx1UWZQlKurRFJBDwH9Bjct6wkHC2RMFRHMWH8HuflXBV3xcB9vFn9ay4Oe9BFG4N_3K3u4q79bsXg6aDEgQw1qMIfk11fDlD9cprgOBhvxr-xJN5_pYL-ZdrEIm1yXFdnhl3PdQr60qm7NSmTpGLjYsQ0-rHRxsAgnutsY_ce9KOgxCgT9SRQIK1-2WT6yjr5g0Ifwru7pkGl1M2-3PgoNMbAY6JrP2YIXmKPN-D0cNeNipM' },
-]
+/* ── Full size catalogs (must match backoffice AjouterProduit) ── */
+const SIZE_CATALOG = {
+  standard:   ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+  eu:         ['36', '38', '40', '42', '44', '46', '48', '50', '52'],
+  chaussures: ['39', '40', '41', '42', '43', '44', '45', '46'],
+}
+
+/* Detect which catalog a product's sizes belong to */
+function detectSizeType(sizesStr) {
+  const sizes = (sizesStr || '').split(',').map(s => s.trim()).filter(Boolean)
+  if (sizes.length === 0) return null
+  // Letters → standard
+  if (sizes.some(s => SIZE_CATALOG.standard.includes(s))) return 'standard'
+  // Chaussures-only sizes: 39, 41, 43, 45
+  if (sizes.some(s => ['39', '41', '43', '45'].includes(s))) return 'chaussures'
+  // EU-only sizes: 36, 38, 48, 50, 52
+  if (sizes.some(s => ['36', '38', '48', '50', '52'].includes(s))) return 'eu'
+  // Ambiguous numbers (40,42,44,46) → default to chaussures
+  if (sizes.every(s => SIZE_CATALOG.chaussures.includes(s))) return 'chaussures'
+  return 'eu'
+}
+
+/* ── Parse colorImages JSON → { colorName: [url1, url2, …] } ── */
+function parseColorImages(raw) {
+  if (!raw) return {}
+  try {
+    const ci = typeof raw === 'string' ? JSON.parse(raw) : raw
+    return ci && typeof ci === 'object' ? ci : {}
+  } catch { return {} }
+}
+
+/* Case-insensitive lookup in colorImages map */
+function getImagesForColor(colorImagesMap, colorName) {
+  if (!colorName) return null
+  // Direct match first
+  if (colorImagesMap[colorName]) return colorImagesMap[colorName]
+  // Case-insensitive fallback
+  const lower = colorName.toLowerCase()
+  for (const [key, val] of Object.entries(colorImagesMap)) {
+    if (key.toLowerCase() === lower) return val
+  }
+  return null
+}
+
+/* ── Extract unique colours from variants ── */
+function extractColors(variants) {
+  const map = new Map()
+  for (const v of variants || []) {
+    const name = v.label?.split(' - ')[0]?.trim()
+    if (name && v.colorSwatch && !map.has(name)) {
+      map.set(name, v.colorSwatch)
+    }
+  }
+  return [...map.entries()].map(([name, swatch]) => ({ name, swatch }))
+}
+
+/* ── Check if a specific color+size combination is in stock ── */
+function isVariantInStock(variants, colorName, sizeName) {
+  const v = (variants || []).find((vt) => {
+    const parts = vt.label?.split(' - ')
+    return parts?.[0]?.trim() === colorName && parts?.[1]?.trim() === sizeName
+  })
+  return v ? v.stock > 0 : false
+}
 
 export default function ProductDetail() {
   const { slug } = useParams()
-  const product = allProducts.find((p) => p.slug === slug) || allProducts[0]
+  const navigate = useNavigate()
+  const { addToCart } = useCart()
 
-  const [selectedSize, setSelectedSize] = useState('M')
-  const [selectedColor, setSelectedColor] = useState(0)
+  const [product, setProduct] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const [selectedColorIdx, setSelectedColorIdx] = useState(0)
+  const [selectedSize, setSelectedSize] = useState(null)
   const [openAccordion, setOpenAccordion] = useState('description')
 
-  const toggleAccordion = (key) => {
-    setOpenAccordion(openAccordion === key ? null : key)
+  const [similarProducts, setSimilarProducts] = useState([])
+
+  /* ── Fetch product by slug ── */
+  useEffect(() => {
+    setLoading(true)
+    setError(null)
+    axios.get(`${API}/public/products/${slug}`)
+      .then((res) => setProduct(res.data))
+      .catch(() => setError('Produit introuvable.'))
+      .finally(() => setLoading(false))
+  }, [slug])
+
+  /* ── Fetch similar products (same parent category) ── */
+  useEffect(() => {
+    if (!product) return
+    const catId = product.parentCategoryId || product.categoryId
+    if (!catId) return
+    axios.get(`${API}/public/products/parent-category/${catId}`)
+      .then((res) => {
+        const others = (res.data || []).filter((p) => p.id !== product.id).slice(0, 4)
+        setSimilarProducts(others)
+      })
+      .catch(() => {})
+  }, [product])
+
+  /* ── Derived data ── */
+  const colors = useMemo(() => product ? extractColors(product.variants) : [], [product])
+  const sizeType = useMemo(() => product ? detectSizeType(product.sizes) : null, [product])
+  const allSizes = useMemo(() => sizeType ? SIZE_CATALOG[sizeType] : [], [sizeType])
+  const colorImagesMap = useMemo(() => product ? parseColorImages(product.colorImages) : {}, [product])
+
+  const selectedColor = colors[selectedColorIdx] || null
+
+  /* ── Images for the selected colour (case-insensitive lookup) ── */
+  const images = useMemo(() => {
+    if (!selectedColor) return []
+    const imgs = getImagesForColor(colorImagesMap, selectedColor.name)
+    if (Array.isArray(imgs) && imgs.length > 0) return imgs.filter(Boolean)
+    // Fallback: try first available color
+    for (const arr of Object.values(colorImagesMap)) {
+      if (Array.isArray(arr) && arr.length > 0) return arr.filter(Boolean)
+    }
+    return product?.imageUrl ? [product.imageUrl] : []
+  }, [selectedColor, colorImagesMap, product])
+
+  /* ── Reset size when colour changes ── */
+  useEffect(() => { setSelectedSize(null) }, [selectedColorIdx])
+
+  /* ── Price display ── */
+  const hasPromo = product?.promoActive && product?.promoPrice > 0 && product?.promoPrice < product?.salePrice
+  const displayPrice = hasPromo ? product.promoPrice : product?.salePrice || 0
+
+  const toggleAccordion = (key) => setOpenAccordion(openAccordion === key ? null : key)
+
+  /* ── Helper: resolve first image for a similar product card ── */
+  function resolveThumb(p) {
+    if (p.imageUrl) return p.imageUrl
+    const ci = parseColorImages(p.colorImages)
+    for (const arr of Object.values(ci)) {
+      if (Array.isArray(arr) && arr[0]) return arr[0]
+    }
+    return null
+  }
+
+  /* ── Loading state ── */
+  if (loading) {
+    return (
+      <main className="pt-32 pb-20 px-4 md:px-12 max-w-[1600px] mx-auto flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-3 text-neutral-500">
+          <span className="material-symbols-outlined text-3xl animate-spin">autorenew</span>
+          <p className="text-sm">Chargement du produit…</p>
+        </div>
+      </main>
+    )
+  }
+
+  /* ── Error state ── */
+  if (error || !product) {
+    return (
+      <main className="pt-32 pb-20 px-4 md:px-12 max-w-[1600px] mx-auto flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <span className="material-symbols-outlined text-5xl text-neutral-300">error</span>
+        <p className="text-neutral-500">{error || 'Produit introuvable.'}</p>
+        <Link to="/produits" className="text-sm underline underline-offset-4 hover:text-black">
+          Retour aux produits
+        </Link>
+      </main>
+    )
   }
 
   return (
     <main className="pt-32 pb-20 px-4 md:px-12 max-w-[1600px] mx-auto">
+      {/* Back button */}
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-1 text-sm text-neutral-500 hover:text-black transition-colors mb-6 group"
+      >
+        <span className="material-symbols-outlined text-lg group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
+        Retour
+      </button>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20">
-        {/* Left: Editorial Image Gallery */}
+
+        {/* ═══ LEFT: Image Gallery — changes with selected colour ═══ */}
         <div className="lg:col-span-7 grid grid-cols-1 gap-4">
+          {images.length === 0 && (
+            <div className="aspect-[2/3] w-full bg-neutral-100 flex items-center justify-center text-neutral-400">
+              <span className="material-symbols-outlined text-6xl">image</span>
+            </div>
+          )}
           {/* Main image */}
-          <div className="aspect-[2/3] w-full bg-surface-container overflow-hidden">
-            <img
-              src={product.images[0]}
-              alt={product.name}
-              className="w-full h-full object-cover"
-            />
-          </div>
-          {/* Two small images side by side */}
-          {product.images.length > 2 && (
+          {images.length >= 1 && (
+            <div className="aspect-[2/3] w-full bg-surface-container overflow-hidden">
+              <img src={images[0]} alt={product.nom} className="w-full h-full object-cover" />
+            </div>
+          )}
+          {/* Two-column detail images */}
+          {images.length >= 3 && (
             <div className="grid grid-cols-2 gap-4">
               <div className="aspect-[2/3] bg-surface-container overflow-hidden">
-                <img src={product.images[1]} alt="Détail" className="w-full h-full object-cover" />
+                <img src={images[1]} alt="Détail" className="w-full h-full object-cover" />
               </div>
               <div className="aspect-[2/3] bg-surface-container overflow-hidden">
-                <img src={product.images[2]} alt="Vue alternative" className="w-full h-full object-cover" />
+                <img src={images[2]} alt="Vue alternative" className="w-full h-full object-cover" />
               </div>
             </div>
           )}
-          {/* Full-width lookbook image */}
-          {product.images.length > 3 && (
+          {/* Fallback for exactly 2 images */}
+          {images.length === 2 && (
             <div className="aspect-[2/3] w-full bg-surface-container overflow-hidden">
-              <img src={product.images[3]} alt="Lookbook" className="w-full h-full object-cover" />
-            </div>
-          )}
-          {/* Fallback for products with only 2 images */}
-          {product.images.length === 2 && (
-            <div className="aspect-[2/3] w-full bg-surface-container overflow-hidden">
-              <img src={product.images[1]} alt="Vue alternative" className="w-full h-full object-cover" />
+              <img src={images[1]} alt="Vue alternative" className="w-full h-full object-cover" />
             </div>
           )}
         </div>
 
-        {/* Right: Product Details (Sticky) */}
+        {/* ═══ RIGHT: Product Details (Sticky) ═══ */}
         <div className="lg:col-span-5 flex flex-col h-fit lg:sticky lg:top-32">
+
           {/* Title & Price */}
           <div className="mb-10">
-            <span className="text-[11px] tracking-[0.2em] uppercase text-neutral-500 mb-2 block font-label">
-              {product.collection}
-            </span>
-            <h1 className="text-4xl font-bold tracking-tight uppercase mb-4">{product.name}</h1>
-            <p className="text-2xl font-light text-on-surface">{product.price}</p>
-          </div>
-
-          {/* Color Selection */}
-          <div className="mb-8">
-            <span className="text-[11px] font-bold tracking-[0.1em] uppercase block mb-4 font-label">
-              Couleur : {product.colorName}
-            </span>
-            <div className="flex gap-3">
-              {product.colors.map((c, i) => (
-                <button
-                  key={c}
-                  onClick={() => setSelectedColor(i)}
-                  className="w-8 h-8"
-                  style={{
-                    backgroundColor: c,
-                    border: c === '#ffffff' ? '1px solid #c6c6c6' : '1px solid transparent',
-                    outline: selectedColor === i ? '1px solid rgba(0,0,0,0.2)' : 'none',
-                    outlineOffset: '4px',
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Size Selection */}
-          <div className="mb-10">
-            <div className="flex justify-between items-end mb-4">
-              <span className="text-[11px] font-bold tracking-[0.1em] uppercase block font-label">
-                Sélectionner la Taille
+            {product.categoryNom && (
+              <span className="text-[11px] tracking-[0.2em] uppercase text-neutral-500 mb-2 block font-label">
+                {product.categoryNom}
               </span>
-              <button className="text-[11px] uppercase underline underline-offset-4 text-neutral-500 hover:text-black">
-                Guide des tailles
-              </button>
-            </div>
-            <div className="grid gap-0 border border-neutral-200" style={{ gridTemplateColumns: `repeat(${product.sizes.length}, 1fr)` }}>
-              {product.sizes.map((s, i) => (
-                <button
-                  key={s}
-                  onClick={() => setSelectedSize(s)}
-                  className={`py-4 text-[13px] ${
-                    i < product.sizes.length - 1 ? 'border-r border-neutral-200' : ''
-                  } ${
-                    selectedSize === s
-                      ? 'bg-black text-white'
-                      : 'hover:bg-black hover:text-white'
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
+            )}
+            <h1 className="text-4xl font-bold tracking-tight uppercase mb-4">{product.nom}</h1>
+            <div className="flex items-center gap-3">
+              {hasPromo && (
+                <span className="text-lg text-neutral-400 line-through">
+                  {product.salePrice.toFixed(2)} DT
+                </span>
+              )}
+              <span className={`text-2xl font-light ${hasPromo ? 'text-red-600' : 'text-on-surface'}`}>
+                {Number(displayPrice).toFixed(2)} DT
+              </span>
             </div>
           </div>
 
-          {/* Actions */}
+          {/* ── Colour Selection ── */}
+          {colors.length > 0 && (
+            <div className="mb-8">
+              <span className="text-[11px] font-bold tracking-[0.1em] uppercase block mb-4 font-label">
+                Couleur : {selectedColor?.name}
+              </span>
+              <div className="flex gap-3">
+                {colors.map((c, i) => (
+                  <button
+                    key={c.name}
+                    title={c.name}
+                    onClick={() => setSelectedColorIdx(i)}
+                    className="w-8 h-8 transition-all"
+                    style={{
+                      backgroundColor: c.swatch,
+                      border: c.swatch?.toLowerCase() === '#ffffff' ? '1px solid #c6c6c6' : '1px solid transparent',
+                      outline: selectedColorIdx === i ? '2px solid rgba(0,0,0,0.6)' : 'none',
+                      outlineOffset: '3px',
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Size Selection ── */}
+          {allSizes.length > 0 && selectedColor && (
+            <div className="mb-10">
+              <div className="flex justify-between items-end mb-4">
+                <span className="text-[11px] font-bold tracking-[0.1em] uppercase block font-label">
+                  Sélectionner la Taille
+                </span>
+                <button className="text-[11px] uppercase underline underline-offset-4 text-neutral-500 hover:text-black">
+                  Guide des tailles
+                </button>
+              </div>
+              <div
+                className="grid gap-0 border border-neutral-200"
+                style={{ gridTemplateColumns: `repeat(${Math.min(allSizes.length, 6)}, 1fr)` }}
+              >
+                {allSizes.map((s, i) => {
+                  const inStock = isVariantInStock(product.variants, selectedColor.name, s)
+                  const isSelected = selectedSize === s
+
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => inStock && setSelectedSize(s)}
+                      disabled={!inStock}
+                      className={`relative py-4 text-[13px] transition-colors ${
+                        i < allSizes.length - 1 ? 'border-r border-neutral-200' : ''
+                      } ${
+                        !inStock
+                          ? 'text-neutral-300 cursor-not-allowed'
+                          : isSelected
+                            ? 'bg-black text-white'
+                            : 'hover:bg-black hover:text-white'
+                      }`}
+                    >
+                      {s}
+                      {/* Barre diagonale pour les tailles en rupture */}
+                      {!inStock && (
+                        <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <span
+                            className="block w-[1px] bg-neutral-300"
+                            style={{ height: '120%', transform: 'rotate(-45deg)' }}
+                          />
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── Actions ── */}
           <div className="flex flex-col gap-4 mb-12">
-            <button className="w-full fo-btn py-6 text-[14px] font-bold uppercase tracking-widest">
+            <button
+              disabled={!selectedSize}
+              onClick={() => {
+                if (!selectedSize || !selectedColor || !product) return
+                addToCart(product, selectedColor.name, selectedSize, displayPrice, images[0] || '')
+                toast.success(`${product.nom} ajouté au panier`)
+              }}
+              className={`w-full fo-btn py-6 text-[14px] font-bold uppercase tracking-widest transition-opacity ${
+                !selectedSize ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
               Ajouter au Panier
             </button>
             <button className="w-full flex items-center justify-center gap-2 py-4 border border-neutral-200 hover:border-black uppercase text-[12px] font-bold tracking-widest">
@@ -249,33 +338,19 @@ export default function ProductDetail() {
             </button>
           </div>
 
-          {/* Accordions */}
+          {/* ── Accordions ── */}
           <div className="border-t border-neutral-200">
-            {/* Description */}
-            <div className="py-6 border-b border-neutral-200 cursor-pointer" onClick={() => toggleAccordion('description')}>
-              <div className="flex justify-between items-center">
-                <span className="text-[12px] font-bold tracking-[0.1em] uppercase font-label">Description</span>
-                <span className="material-symbols-outlined">{openAccordion === 'description' ? 'expand_less' : 'expand_more'}</span>
+            {product.description && (
+              <div className="py-6 border-b border-neutral-200 cursor-pointer" onClick={() => toggleAccordion('description')}>
+                <div className="flex justify-between items-center">
+                  <span className="text-[12px] font-bold tracking-[0.1em] uppercase font-label">Description</span>
+                  <span className="material-symbols-outlined">{openAccordion === 'description' ? 'expand_less' : 'expand_more'}</span>
+                </div>
+                {openAccordion === 'description' && (
+                  <p className="mt-4 text-[14px] leading-relaxed text-neutral-600">{product.description}</p>
+                )}
               </div>
-              {openAccordion === 'description' && (
-                <p className="mt-4 text-[14px] leading-relaxed text-neutral-600">
-                  {product.description}
-                </p>
-              )}
-            </div>
-            {/* Composition */}
-            <div className="py-6 border-b border-neutral-200 cursor-pointer" onClick={() => toggleAccordion('composition')}>
-              <div className="flex justify-between items-center">
-                <span className="text-[12px] font-bold tracking-[0.1em] uppercase font-label">Composition</span>
-                <span className="material-symbols-outlined">{openAccordion === 'composition' ? 'expand_less' : 'expand_more'}</span>
-              </div>
-              {openAccordion === 'composition' && (
-                <p className="mt-4 text-[14px] leading-relaxed text-neutral-600">
-                  {product.composition}
-                </p>
-              )}
-            </div>
-            {/* Livraison & Retours */}
+            )}
             <div className="py-6 border-b border-neutral-200 cursor-pointer" onClick={() => toggleAccordion('shipping')}>
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-bold tracking-[0.1em] uppercase font-label">Livraison & Retours</span>
@@ -283,7 +358,7 @@ export default function ProductDetail() {
               </div>
               {openAccordion === 'shipping' && (
                 <p className="mt-4 text-[14px] leading-relaxed text-neutral-600">
-                  {product.shipping}
+                  Livraison standard gratuite (3-5 jours ouvrables). Retours offerts sous 30 jours.
                 </p>
               )}
             </div>
@@ -291,29 +366,42 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* Similar Products */}
-      <section className="mt-40">
-        <h2 className="text-[13px] font-bold tracking-[0.2em] uppercase mb-12 text-center font-label">
-          Vous aimerez aussi
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
-          {similarProducts.map((item) => (
-            <div key={item.name} className="group cursor-pointer">
-              <div className="aspect-[3/4] bg-surface-container mb-4 overflow-hidden">
-                <img
-                  src={item.img}
-                  alt={item.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                />
-              </div>
-              <div>
-                <p className="text-[12px] font-bold uppercase tracking-tight">{item.name}</p>
-                <p className="text-[12px] text-neutral-500">{item.price}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* ═══ Similar Products ═══ */}
+      {similarProducts.length > 0 && (
+        <section className="mt-40">
+          <h2 className="text-[13px] font-bold tracking-[0.2em] uppercase mb-12 text-center font-label">
+            Vous aimerez aussi
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+            {similarProducts.map((item) => {
+              const thumb = resolveThumb(item)
+              const itemPrice = item.promoActive && item.promoPrice > 0 && item.promoPrice < item.salePrice
+                ? item.promoPrice : item.salePrice
+              return (
+                <Link key={item.id} to={`/produit/${item.slug}`} className="group cursor-pointer">
+                  <div className="aspect-[3/4] bg-surface-container mb-4 overflow-hidden">
+                    {thumb ? (
+                      <img
+                        src={thumb}
+                        alt={item.nom}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-neutral-300">
+                        <span className="material-symbols-outlined text-4xl">image</span>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[12px] font-bold uppercase tracking-tight">{item.nom}</p>
+                    <p className="text-[12px] text-neutral-500">{itemPrice.toFixed(2)} DT</p>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        </section>
+      )}
     </main>
   )
 }

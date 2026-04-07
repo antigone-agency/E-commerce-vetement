@@ -739,8 +739,6 @@ export default function Apparence() {
                     {[
                       { field: 'instagram', icon: 'camera',            bg: 'bg-pink-100',  text: 'text-pink-600',  label: 'Instagram' },
                       { field: 'facebook',  icon: 'social_leaderboard', bg: 'bg-blue-100',  text: 'text-blue-600',  label: 'Facebook' },
-                      { field: 'linkedin',  icon: 'alternate_email',    bg: 'bg-sky-100',   text: 'text-sky-600',   label: 'LinkedIn' },
-                      { field: 'whatsapp',  icon: 'chat',               bg: 'bg-green-100', text: 'text-green-600', label: 'WhatsApp' },
                     ].map((s) => (
                       <div key={s.field} className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
                         <div className={`w-10 h-10 rounded-lg ${s.bg} ${s.text} flex items-center justify-center flex-shrink-0`}>

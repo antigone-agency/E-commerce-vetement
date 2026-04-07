@@ -7,6 +7,7 @@ import CustomSelect from '../components/ui/CustomSelect'
 import Spinner from '../components/ui/Spinner'
 import { promotionApi } from '../api/promotionApi'
 import { categoryApi } from '../api/categoryApi'
+import { productApi } from '../api/productApi'
 
 /* ══════════════════════════════════════════════════════════════════════════════
    CONFIG MAPS
@@ -137,7 +138,10 @@ export default function Promotions() {
 
   /* ── Remise rapide ── */
   const [remiseNom, setRemiseNom] = useState('')
-  const [remiseProduit, setRemiseProduit] = useState('')
+  const [remiseProduits, setRemiseProduits] = useState([])
+  const [remisePickerOpen, setRemisePickerOpen] = useState(false)
+  const [remisePickerSearch, setRemisePickerSearch] = useState('')
+  const [allProducts, setAllProducts] = useState([])
   const [remiseType, setRemiseType] = useState('pourcentage')
   const [remiseValeur, setRemiseValeur] = useState('')
   const [remiseCategorie, setRemiseCategorie] = useState('')
@@ -161,6 +165,7 @@ export default function Promotions() {
       setDiscounts(discountsData || [])
       setStats(statsData || null)
       setCategoriesList((catsData || []).map(c => c.nom || c.name))
+      productApi.getAll().then(setAllProducts).catch(() => {})
     } catch {
       toast.error('Erreur lors du chargement des promotions.')
     } finally {
@@ -298,6 +303,14 @@ export default function Promotions() {
   }
 
   /* ── Remise Actions ── */
+  const toggleRemiseProduit = (product) => {
+    setRemiseProduits(prev =>
+      prev.some(p => p.id === product.id)
+        ? prev.filter(p => p.id !== product.id)
+        : [...prev, product]
+    )
+  }
+
   const submitRemise = async () => {
     if (!remiseType) return toast.error('Le type de remise est obligatoire.')
     if (!remiseValeur) return toast.error('La valeur est obligatoire.')
@@ -306,11 +319,12 @@ export default function Promotions() {
       const catObj = categoriesList.indexOf(remiseCategorie) >= 0
         ? (await categoryApi.getAll()).find(c => (c.nom || c.name) === remiseCategorie)
         : null
+      const productNames = remiseProduits.map(p => p.nom).join(', ')
       const payload = {
-        nom: remiseNom || remiseProduit || 'Remise rapide',
+        nom: remiseNom || productNames || 'Remise rapide',
         type: remiseType,
         valeur: parseFloat(remiseValeur) || 0,
-        productName: remiseProduit || null,
+        productName: productNames || null,
         categoryId: catObj?.id || null,
         prixOriginal: parseFloat(remisePrixOriginal) || 0,
         dateDebut: remiseDateDebut || null,
@@ -319,7 +333,7 @@ export default function Promotions() {
       const created = await promotionApi.createDiscount(payload)
       setDiscounts(prev => [created, ...prev])
       toast.success('Remise appliquée avec succès !')
-      setRemiseNom(''); setRemiseProduit(''); setRemiseValeur(''); setRemiseCategorie(''); setRemisePrixOriginal(''); setRemiseDateDebut(''); setRemiseDateFin('')
+      setRemiseNom(''); setRemiseProduits([]); setRemisePickerOpen(false); setRemiseValeur(''); setRemiseCategorie(''); setRemisePrixOriginal(''); setRemiseDateDebut(''); setRemiseDateFin('')
       refreshStats()
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Erreur lors de la création de la remise.')
@@ -626,13 +640,117 @@ export default function Promotions() {
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Produit (optionnel)</label>
-                  <div className="relative">
-                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
-                    <input value={remiseProduit} onChange={e => setRemiseProduit(e.target.value)} placeholder="Nom du produit ou SKU..."
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
-                  </div>
+                <div className="space-y-2 md:col-span-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    Produits concernés
+                    {remiseProduits.length > 0 && (
+                      <span className="ml-2 bg-brand text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                        {remiseProduits.length}
+                      </span>
+                    )}
+                  </label>
+
+                  {/* Selected tags */}
+                  {remiseProduits.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {remiseProduits.map(p => (
+                        <span key={p.id} className="inline-flex items-center gap-1.5 bg-brand/10 text-brand border border-brand/20 px-2.5 py-1 rounded-full text-xs font-bold">
+                          {p.nom}
+                          <button type="button" onClick={() => toggleRemiseProduit(p)} className="hover:text-red-500 transition-colors">
+                            <span className="material-symbols-outlined text-[12px]">close</span>
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Toggle picker button */}
+                  <button
+                    type="button"
+                    onClick={() => { setRemisePickerOpen(v => !v); setRemisePickerSearch('') }}
+                    className={`w-full flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm transition-all ${
+                      remisePickerOpen
+                        ? 'border-brand bg-brand/5 text-brand'
+                        : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-brand hover:text-brand'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-lg">
+                      {remisePickerOpen ? 'expand_less' : 'add_circle'}
+                    </span>
+                    {remisePickerOpen ? 'Fermer la sélection' : 'Sélectionner des produits'}
+                  </button>
+
+                  {/* Inline product picker */}
+                  {remisePickerOpen && (
+                    <div className="border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm">
+                      {/* Search */}
+                      <div className="p-3 border-b border-slate-100">
+                        <div className="relative">
+                          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+                          <input
+                            value={remisePickerSearch}
+                            onChange={e => setRemisePickerSearch(e.target.value)}
+                            placeholder="Rechercher un produit..."
+                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Product list */}
+                      <div className="max-h-52 overflow-y-auto divide-y divide-slate-50">
+                        {allProducts
+                          .filter(p =>
+                            !remisePickerSearch ||
+                            p.nom?.toLowerCase().includes(remisePickerSearch.toLowerCase()) ||
+                            p.sku?.toLowerCase().includes(remisePickerSearch.toLowerCase())
+                          )
+                          .map(p => {
+                            const selected = remiseProduits.some(r => r.id === p.id)
+                            return (
+                              <label
+                                key={p.id}
+                                className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors ${
+                                  selected ? 'bg-brand/5' : 'hover:bg-slate-50'
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={selected}
+                                  onChange={() => toggleRemiseProduit(p)}
+                                  className="w-4 h-4 text-brand rounded border-slate-300 accent-brand cursor-pointer"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-sm font-medium truncate ${selected ? 'text-brand' : 'text-slate-700'}`}>{p.nom}</p>
+                                  {p.sku && <p className="text-[10px] text-slate-400 uppercase tracking-wider">{p.sku}</p>}
+                                </div>
+                                <span className="text-xs font-bold text-slate-600 flex-shrink-0">{p.salePrice?.toFixed(2)} DT</span>
+                              </label>
+                            )
+                          })}
+                        {allProducts.filter(p =>
+                          !remisePickerSearch ||
+                          p.nom?.toLowerCase().includes(remisePickerSearch.toLowerCase()) ||
+                          p.sku?.toLowerCase().includes(remisePickerSearch.toLowerCase())
+                        ).length === 0 && (
+                          <p className="text-center text-slate-400 text-sm py-6">Aucun produit trouvé</p>
+                        )}
+                      </div>
+
+                      {/* Footer */}
+                      {remiseProduits.length > 0 && (
+                        <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                          <span className="text-xs text-slate-500">{remiseProduits.length} produit(s) sélectionné(s)</span>
+                          <button
+                            type="button"
+                            onClick={() => setRemisePickerOpen(false)}
+                            className="text-xs font-bold text-brand hover:underline"
+                          >
+                            Confirmer
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">

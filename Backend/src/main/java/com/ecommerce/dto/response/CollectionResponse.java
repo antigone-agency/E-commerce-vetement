@@ -44,6 +44,8 @@ public class CollectionResponse {
 
     private List<String> linkedCategories;
 
+    private List<Long> productIds;
+
     private String metaTitle;
     private String metaDescription;
 

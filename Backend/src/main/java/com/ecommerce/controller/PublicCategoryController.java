@@ -20,6 +20,11 @@ public class PublicCategoryController {
         return ResponseEntity.ok(categoryService.getMenuCategories());
     }
 
+    @GetMapping
+    public ResponseEntity<List<CategoryResponse>> getAllCategories() {
+        return ResponseEntity.ok(categoryService.getMenuCategories());
+    }
+
     @GetMapping("/homepage")
     public ResponseEntity<List<CategoryResponse>> getHomepageCategories() {
         return ResponseEntity.ok(categoryService.getHomepageCategories());

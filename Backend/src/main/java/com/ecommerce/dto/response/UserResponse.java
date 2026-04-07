@@ -24,6 +24,7 @@ public class UserResponse {
     private String address;
     private String city;
     private String postalCode;
+    private String gouvernorat;
     private String country;
     private AccountStatus status;
     private String segmentName;

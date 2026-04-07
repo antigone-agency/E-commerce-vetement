@@ -6,8 +6,6 @@ export default function Footer() {
   const socialLinks = [
     { label: 'Instagram', href: instagram },
     { label: 'Facebook', href: facebook },
-    { label: 'LinkedIn', href: linkedin },
-    { label: 'WhatsApp', href: whatsapp ? `https://wa.me/${whatsapp.replace(/\D/g, '')}` : '' },
   ].filter(s => s.href)
 
   return (
@@ -61,7 +59,6 @@ export default function Footer() {
             <>
               <li><a className="font-label tracking-[0.05em] text-[11px] uppercase text-neutral-600 hover:text-black" href="#">Instagram</a></li>
               <li><a className="font-label tracking-[0.05em] text-[11px] uppercase text-neutral-600 hover:text-black" href="#">Facebook</a></li>
-              <li><a className="font-label tracking-[0.05em] text-[11px] uppercase text-neutral-600 hover:text-black" href="#">Pinterest</a></li>
             </>
           )}
         </ul>

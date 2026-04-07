@@ -185,7 +185,7 @@ export default function Home() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                 <div className="absolute bottom-10 left-10">
                   <h2 className="text-white text-4xl font-bold uppercase mb-4">{col?.nom}</h2>
-                  <a className="text-white border-b border-white pb-1 text-[11px] font-bold uppercase tracking-widest" href={`/collections/${col.id}`}>
+                  <a className="text-white border-b border-white pb-1 text-[11px] font-bold uppercase tracking-widest" href={`/collection/${col.slug}`}>
                     Voir plus
                   </a>
                 </div>
@@ -207,7 +207,7 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                   <div className="absolute bottom-10 left-10">
                     <h2 className="text-white text-3xl font-bold uppercase mb-4">{col?.nom}</h2>
-                    <a className="text-white border-b border-white pb-1 text-[11px] font-bold uppercase tracking-widest" href={`/collections/${col.id}`}>
+                    <a className="text-white border-b border-white pb-1 text-[11px] font-bold uppercase tracking-widest" href={`/collection/${col.slug}`}>
                       Voir plus
                     </a>
                   </div>
@@ -226,7 +226,7 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                   <div className="absolute bottom-10 left-10">
                     <h2 className="text-white text-3xl font-bold uppercase mb-4">{col?.nom}</h2>
-                    <a className="text-white border-b border-white pb-1 text-[11px] font-bold uppercase tracking-widest" href={`/collections/${col.id}`}>
+                    <a className="text-white border-b border-white pb-1 text-[11px] font-bold uppercase tracking-widest" href={`/collection/${col.slug}`}>
                       Voir plus
                     </a>
                   </div>
