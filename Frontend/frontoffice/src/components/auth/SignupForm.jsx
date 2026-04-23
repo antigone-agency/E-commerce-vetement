@@ -11,6 +11,8 @@ export default function SignupForm({ onSwitch }) {
     password: '',
     confirm: '',
     conditions: false,
+    genre: '',
+    dateNaissance: '',
   })
   const [showPass, setShowPass] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
@@ -43,10 +45,13 @@ export default function SignupForm({ onSwitch }) {
         lastName: form.nom,
         email: form.email,
         password: form.password,
+        gender: form.genre || null,
+        dateOfBirth: form.dateNaissance || null,
       })
       localStorage.setItem('accessToken', data.accessToken)
       localStorage.setItem('refreshToken', data.refreshToken)
       localStorage.setItem('user', JSON.stringify(data.user))
+      window.dispatchEvent(new Event('userChanged'))
       scheduleAutoLogout()
       navigate('/')
     } catch (err) {
@@ -106,6 +111,46 @@ export default function SignupForm({ onSwitch }) {
               required
             />
           </div>
+        </div>
+
+        {/* Genre */}
+        <div>
+          <label className="block font-label text-[10px] tracking-[0.1em] uppercase text-outline mb-2 font-bold">
+            Genre
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            {['FEMME', 'HOMME'].map(g => (
+              <button
+                key={g}
+                type="button"
+                onClick={() => setForm(f => ({ ...f, genre: f.genre === g ? '' : g }))}
+                className={`py-2.5 border text-[11px] font-bold uppercase tracking-widest transition-colors ${
+                  form.genre === g
+                    ? 'border-primary bg-primary text-on-primary'
+                    : 'border-outline-variant text-secondary hover:border-primary hover:text-primary'
+                }`}
+              >
+                {g === 'FEMME' ? 'Femme' : 'Homme'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Date de naissance */}
+        <div>
+          <label className="block font-label text-[10px] tracking-[0.1em] uppercase text-outline mb-2 font-bold">
+            Date de naissance
+          </label>
+          <input
+            type="date"
+            value={form.dateNaissance}
+            onChange={set('dateNaissance')}
+            max={new Date().toISOString().split('T')[0]}
+            className="auth-input"
+          />
+          <p className="font-body text-[10px] text-secondary mt-1.5">
+            Optionnel — pour recevoir un cadeau le jour de votre anniversaire
+          </p>
         </div>
 
         {/* Email */}

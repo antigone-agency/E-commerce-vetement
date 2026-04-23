@@ -2,47 +2,101 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 
 const CartContext = createContext({ items: [], addToCart: () => {}, removeFromCart: () => {}, updateQuantity: () => {}, clearCart: () => {}, itemCount: 0 })
 
-const STORAGE_KEY = 'cart_items'
+const CART_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
+
+/** Returns the localStorage key scoped to the current user's email (or guest). */
+function getStorageKey() {
+  try {
+    const user = JSON.parse(localStorage.getItem('user'))
+    const email = user?.email || 'guest'
+    return `cart_items_${email}`
+  } catch {
+    return 'cart_items_guest'
+  }
+}
 
 function loadCart() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const key = getStorageKey()
+    const raw = localStorage.getItem(key)
     if (!raw) return []
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    // Validate items have the expected shape (reject old/corrupt data)
+
+    // Check TTL — if savedAt older than 24h, discard
+    const meta = localStorage.getItem(`${key}_meta`)
+    if (meta) {
+      const { savedAt } = JSON.parse(meta)
+      if (Date.now() - savedAt > CART_TTL_MS) {
+        localStorage.removeItem(key)
+        localStorage.removeItem(`${key}_meta`)
+        return []
+      }
+    }
+
+    // Validate items have the expected shape
     const valid = parsed.filter(i => i.key && i.productId && i.nom && typeof i.price === 'number')
     if (valid.length !== parsed.length) {
-      localStorage.removeItem(STORAGE_KEY)
+      localStorage.removeItem(key)
       return valid
     }
     return valid
   } catch {
-    localStorage.removeItem(STORAGE_KEY)
     return []
   }
 }
 
 function saveCart(items) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
+    const key = getStorageKey()
+    localStorage.setItem(key, JSON.stringify(items))
+    localStorage.setItem(`${key}_meta`, JSON.stringify({ savedAt: Date.now() }))
   } catch {
-    // Quota exceeded — silently ignore, cart still works in memory
+    // Quota exceeded — silently ignore
   }
 }
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState(loadCart)
+  const [storageKey, setStorageKey] = useState(getStorageKey)
+
+  // Reload cart whenever the logged-in user changes (login / logout)
+  useEffect(() => {
+    const handleUserChange = () => {
+      const newKey = getStorageKey()
+      setStorageKey(newKey)
+      setItems(loadCart())
+    }
+    window.addEventListener('userChanged', handleUserChange)
+    return () => window.removeEventListener('userChanged', handleUserChange)
+  }, [])
 
   useEffect(() => { saveCart(items) }, [items])
 
-  // Sync across tabs
+  // Sync across tabs for the same user
   useEffect(() => {
     const handler = (e) => {
-      if (e.key === STORAGE_KEY) setItems(e.newValue ? JSON.parse(e.newValue) : [])
+      if (e.key === storageKey) setItems(e.newValue ? JSON.parse(e.newValue) : [])
     }
     window.addEventListener('storage', handler)
     return () => window.removeEventListener('storage', handler)
+  }, [storageKey])
+
+  // Auto-expire: check TTL every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const key = getStorageKey()
+      const meta = localStorage.getItem(`${key}_meta`)
+      if (meta) {
+        const { savedAt } = JSON.parse(meta)
+        if (Date.now() - savedAt > CART_TTL_MS) {
+          localStorage.removeItem(key)
+          localStorage.removeItem(`${key}_meta`)
+          setItems([])
+        }
+      }
+    }, 60_000)
+    return () => clearInterval(timer)
   }, [])
 
   const addToCart = useCallback((product, color, size, price, image, quantity = 1) => {
@@ -61,6 +115,7 @@ export function CartProvider({ children }) {
         size,
         price,
         image,
+        imageUrl: product.imageUrl || image,
         quantity,
       }]
     })
@@ -87,3 +142,4 @@ export function CartProvider({ children }) {
 }
 
 export const useCart = () => useContext(CartContext)
+

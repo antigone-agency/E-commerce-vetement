@@ -22,6 +22,7 @@ function performLogout() {
   localStorage.removeItem('accessToken')
   localStorage.removeItem('refreshToken')
   localStorage.removeItem('user')
+  window.dispatchEvent(new Event('userChanged'))
   window.location.href = '/login'
 }
 

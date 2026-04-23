@@ -39,4 +39,10 @@ public class PublicProductController {
     public ResponseEntity<ProductResponse> getProductBySlug(@PathVariable String slug) {
         return ResponseEntity.ok(productService.getProductBySlug(slug));
     }
+
+    @GetMapping("/nouveautes")
+    public ResponseEntity<List<ProductResponse>> getNouveautes(
+            @RequestParam(required = false) String gender) {
+        return ResponseEntity.ok(productService.getPublicProductsNouveautes(gender));
+    }
 }

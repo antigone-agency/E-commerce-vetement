@@ -1,28 +1,57 @@
-import { useRef, useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import LoadingScreen from '../components/LoadingScreen'
-
-const products = [
-  { name: 'BLAZER STRUCTURÉ', price: '129,00 DT', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAO1WaJWUWGKeVkVIHdSfE6aFy8co2whumXdnYE4ZXrrYX2W7-1bJZvsE5v-tdS84cObJhShv_k-MxlGx1RpNhv2_mdDV0p7NXMiUJ4drgEl1bWyDEGRyYum9mDC77ux0M_IbtIl6UYn_fRoiQASjnHxOvsjreFJwNoLn3vtNrXjwnlvbyxz7_IgVjsdxwsBuZw-9NldoyqVkEeKzc6RO7MHBKOrI2Q0-cs7DEj-J1wrFlh5_yPw5ife_ufFWYFoKw-2t7y4CxGWAip' },
-  { name: 'MANTEAU OVERSIZE LAINE', price: '189,00 DT', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCHG6ccHmyAE_E7Zlz4okwFL-eeSp-mN0ZTO_8WfUsk6POCZJLxAjfMU9lleiJ618w9cNHpK2QYvJBFUz7P2z-jE4dsa7itvABJT-v4EO0EkBF1_GlHHVaqovdAY9Z_jAPp6-m4PdubcMT4fZ2674_kMxHZcckl1KOH1R_o_6VX68tX4zVvL_0nVc-sjgfJDY4ET_9BbNkG-B3RljGvw49Y2eQ2bP2amjowb0vdXh9WQ1I8SQH5MWAl9_l7PUeEZ1wYFaAFIhk7vsTM' },
-  { name: 'T-SHIRT COTON PREMIUM', price: '45,00 DT', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuChMv7OtAm-bmYErEDesxIbgLL4gIr3-Wl8stQZtNRXQBLC7p-ReuHgfwMNuAXiR76tHN8yEoOKtt1SIpfDnJVsshhDKFXRZ0hugidflRlULhQ-Da4TcqbOONWra7T9usIdXQiysoJwLoVrmrFAOdqdLBOtUTmKakDSPGMe4nrvrjW56L2QErGWt1LlTcfz96ptBFIISUvm668PQCXUVbsA6SzEnRM7d73qQuIu70LkZpfSWjHEK3RWeL9-qq7parikxiDccEAOloc0' },
-  { name: 'PANTALON TAILLE HAUTE', price: '89,00 DT', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAPse9yr-R0pimcoUCMSXsYuF3PwJuKpiP8_Tyj19xrgoYfGy9AF49fPGiROWXeMNCmhu2ffIbB_gp6_5mgjGppwWm8rYHP1CWmzSUnTaYe8QLbJhM9c9JoumqihcueI8st90N3Fp0J23lsregHv4yrTFoqTw_6Y9hhOZUbvy5drW244ZzoTLHTzEjnR9rxzKyutHSJKoYE2BB1P5mPT2kHq51QQUiOG6E7wBRg8MSNlyBROQLJwilXuRKSG5Wsigg4jPH3XQsF4E6T' },
-]
-
-const sliderItems = [
-  { name: 'ACCESSOIRES CUIR', sub: 'DÉCOUVRIR LA SÉLECTION', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCmDodCk4Oz1WTRJ8Xi0wZWlE8ugNGNEGGxDJfmsH3m8z_AxqkCVi0MB3JXXcnoM3jutzG30tcvp86mOJUXSbwAKd7MMlyIspVuoFx3_ytj_3knucKRuKlgCJFrJshSGDGAJev-Zn6ftl2j_tz9mwKlQ0vc_Aygysq_HGTDNqgxSix5F3lj9whpLVh1NOAsTVX5GYujNNXFx1FpE4cWUvSNwhVM0pXtnI-2AzVPTnQx0_pvFQZLcmYINFfdf3vzUnJpM5pmi_NBftHQ' },
-  { name: 'LOOKS MONOCHROMES', sub: 'DÉCOUVRIR LA SÉLECTION', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDqBtLnigrzAXJVWGlEwTXeFGu1QZ972-2CRYlJYPn7oxBOIezjYQ_LD7QiuL2aoG6-FxpkXJaTj-8e8CZIUy5AFXTZthLdUHMepnhZZQ59yC4psU2SACnq42-JWsNesZOaL1RtCddw6bWBVRIrBbbl4EH_np5pWP47fPSMxYbcaS7tuMid59Q4MnEGW_Ij00MmJRTKvm8qamcBoOaJQgON2dtzI46FaF_bt9EqSLVdElZNIpVvJnro6urAnMRqCwLEFpdF8Y6RC5w5' },
-  { name: 'COSTUMES MODERNES', sub: 'DÉCOUVRIR LA SÉLECTION', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCtDcNJkns9Ow4AbECI3iyyZ-2UHwLPzuK-4Gw6jgqz0HkuS4wHDy-sxL_NrTZnmTlrNxXnWRGR3mpLQijfD7jXxB3Qjgvvdc5GUGFmxJIBOj2Hucdj-Eyp_7nSf-hXecnqkwgjhX9lgPzWqkYzLDxnZl9jaZ67A2fWHrWqLJRD_tQ0Uj1OAtzVZKbD8lJMUVWik8jhxpezSuk_0RTUR4TCUoIlxh7ll_O8G9juDpk2c0siGjyoKBJoe5npStZ41QoG9-B6gXa3RpBs' },
-  { name: 'TEXTURES & MATIÈRES', sub: 'DÉCOUVRIR LA SÉLECTION', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDWpamewuT00DRTMBQkLvravLk3R5LoNStRe5le2_a_3qc2vaewWOeZf5_Nj9zxrhRdzGRjJRlVNRxtiLcVAnI96XLUuoq75ODsbGsO9FTK_0Wj1T1Aw2jv3fmOO4TzoLq3pMzJlRVuKOc88RgAkJOgg2oI74JLmE-lSGSZejQz0cIOd8L2Givt-wY58Un0mshuIxK9o0dXKy9pRUpmGGsxqTu7QBiuRpa2rrpdwbVFLQAOhya-z2Y06bftuON1mMed9QbuGoE9VVi7' },
-]
+import { parseColorImages } from '../utils/mixMatch'
 
 export default function Home() {
-  const sliderRef = useRef(null)
+  const navigate = useNavigate()
   const [heroBanners, setHeroBanners] = useState([])
   const [heroIdx, setHeroIdx] = useState(0)
   const [direction, setDirection] = useState('next')
   const [homepageCols, setHomepageCols] = useState({})
   const [lsGone, setLsGone] = useState(false)
   const [dataReady, setDataReady] = useState(false)
+  const [nouveautes, setNouveautes] = useState([])
+  const nouvScrollRef = useRef(null)
+  const [nouvAtStart, setNouvAtStart] = useState(true)
+  const [nouvAtEnd, setNouvAtEnd] = useState(true)
+
+  const getNouveautesLink = () => {
+    try {
+      const u = JSON.parse(localStorage.getItem('user') || '{}')
+      const g = (u?.gender || '').toLowerCase()
+      if (g === 'homme') return '/produits/homme'
+      if (g === 'femme') return '/produits/femme'
+    } catch {}
+    return '/produits/femme'
+  }
+
+  const getProductImage = (p) => {
+    if (p.imageUrl) return p.imageUrl
+    const parsed = parseColorImages(p.colorImages)
+    for (const imgs of Object.values(parsed)) {
+      if (Array.isArray(imgs)) {
+        const first = imgs.find(img => img)
+        if (first) return first
+      }
+    }
+    return null
+  }
+
+  const slideNouv = (dir) => {
+    const el = nouvScrollRef.current
+    if (!el) return
+    const card = el.querySelector('[data-nouv-card]')
+    if (!card) return
+    el.scrollBy({ left: dir * (card.offsetWidth + 16), behavior: 'smooth' })
+  }
+
+  const handleNouvScroll = () => {
+    const el = nouvScrollRef.current
+    if (!el) return
+    setNouvAtStart(el.scrollLeft <= 2)
+    setNouvAtEnd(el.scrollLeft >= el.scrollWidth - el.offsetWidth - 2)
+  }
 
   const heroBanner = heroBanners[heroIdx] || null
 
@@ -40,9 +69,14 @@ export default function Home() {
     const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
 
     let segment = ''
+    let userGender = ''
     try {
       const userStr = localStorage.getItem('user')
-      if (userStr) segment = JSON.parse(userStr)?.segmentName || ''
+      if (userStr) {
+        const u = JSON.parse(userStr)
+        segment = u?.segmentName || ''
+        userGender = u?.gender || ''
+      }
     } catch {}
 
     const fetchBanners = fetch(`${baseURL}/public/banners?position=HOMEPAGE_HERO${segment ? `&segment=${segment}` : ''}`)
@@ -67,8 +101,21 @@ export default function Home() {
       })
       .catch(() => {})
 
-    Promise.all([fetchBanners, fetchCols]).then(() => setDataReady(true))
+    const fetchNouveautes = fetch(`${baseURL}/public/products/nouveautes${userGender ? `?gender=${userGender}` : ''}`)
+      .then(r => r.ok ? r.json() : [])
+      .then(data => { setNouveautes(Array.isArray(data) ? data : []) })
+      .catch(() => {})
+
+    Promise.all([fetchBanners, fetchCols, fetchNouveautes]).then(() => setDataReady(true))
   }, [])
+
+  // Init scroll arrow state once nouveautes load
+  useEffect(() => {
+    const el = nouvScrollRef.current
+    if (!el) return
+    setNouvAtStart(true)
+    setNouvAtEnd(el.scrollWidth <= el.offsetWidth + 2)
+  }, [nouveautes])
 
   // Auto-advance slideshow
   useEffect(() => {
@@ -238,64 +285,87 @@ export default function Home() {
       </section>
       )}
 
-      {/* ─── New Products Grid ─── */}
-      <section className="w-full bg-surface overflow-hidden flex flex-col px-6 md:px-12 pb-10" style={{ height: '100vh', paddingTop: '72px' }}>
-        <div className="flex justify-between items-end mb-8 shrink-0">
-          <div>
-            <h2 className="text-[11px] font-bold tracking-[0.2em] uppercase text-neutral-400 mb-2">
-              Saison 2026
-            </h2>
-            <p className="text-3xl font-black tracking-tight uppercase">LES NOUVEAUTÉS</p>
+      {/* ─── Nouveautés Carousel ─── */}
+      {nouveautes.length > 0 && (
+        <section className="w-full bg-surface px-6 md:px-12 py-20">
+          <div className="flex justify-between items-end mb-10">
+            <div>
+              <h2 className="text-[11px] font-bold tracking-[0.2em] uppercase text-neutral-400 mb-2">Saison 2026</h2>
+              <p className="text-3xl font-black tracking-tight uppercase">LES NOUVEAUTÉS</p>
+            </div>
+            <button
+              onClick={() => navigate(getNouveautesLink())}
+              className="text-[11px] font-bold uppercase underline underline-offset-8"
+            >
+              Tout voir
+            </button>
           </div>
-          <a className="text-[11px] font-bold uppercase underline underline-offset-8" href="#">
-            Tout voir
-          </a>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-6 flex-1 min-h-0">
-          {products.map((p) => (
-            <div key={p.name} className="group cursor-pointer flex flex-col min-h-0">
-              <div className="bg-white relative overflow-hidden flex-1 min-h-0">
-                <img
-                  src={p.img}
-                  alt={p.name}
-                  className="w-full h-full object-cover grayscale"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
-                <button className="absolute bottom-0 left-0 w-full bg-black text-white py-3 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300 font-bold text-[11px] uppercase tracking-widest">
-                  AJOUTER AU PANIER
-                </button>
-              </div>
-              <div className="flex flex-col gap-1 pt-3 shrink-0">
-                <span className="text-[13px] font-bold uppercase tracking-tight">{p.name}</span>
-                <span className="text-[12px] text-neutral-500 font-medium">{p.price}</span>
-              </div>
+          <div className="relative">
+            {/* Left arrow */}
+            <button
+              onClick={() => slideNouv(-1)}
+              aria-label="Précédent"
+              disabled={nouvAtStart}
+              className={`absolute left-0 top-[40%] -translate-y-1/2 -translate-x-1/2 z-10 w-11 h-11 bg-white border border-black flex items-center justify-center hover:bg-black hover:text-white shadow-md transition-all duration-300 ${
+                nouvAtStart ? 'opacity-25 cursor-not-allowed' : 'opacity-100'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[22px]">chevron_left</span>
+            </button>
+            {/* Right arrow */}
+            <button
+              onClick={() => slideNouv(1)}
+              aria-label="Suivant"
+              disabled={nouvAtEnd}
+              className={`absolute right-0 top-[40%] -translate-y-1/2 translate-x-1/2 z-10 w-11 h-11 bg-white border border-black flex items-center justify-center hover:bg-black hover:text-white shadow-md transition-all duration-300 ${
+                nouvAtEnd ? 'opacity-25 cursor-not-allowed' : 'opacity-100'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[22px]">chevron_right</span>
+            </button>
+            {/* Scrollable track */}
+            <div
+              ref={nouvScrollRef}
+              onScroll={handleNouvScroll}
+              className="flex gap-4 overflow-x-scroll [&::-webkit-scrollbar]:hidden"
+              style={{ scrollbarWidth: 'none' }}
+            >
+              {nouveautes.map((p) => (
+                <div
+                  key={p.id}
+                  data-nouv-card
+                  className="flex-shrink-0 w-[calc(50%-8px)] md:w-[calc(25%-12px)] group cursor-pointer"
+                  onClick={() => navigate(`/produit/${p.slug}`)}
+                >
+                  <div className="relative w-full aspect-[3/4] bg-neutral-100 overflow-hidden">
+                    {getProductImage(p) ? (
+                      <img
+                        src={getProductImage(p)}
+                        alt={p.nom}
+                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <span className="material-symbols-outlined text-neutral-300 text-5xl">image</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
+                    <span className="absolute top-3 left-3 bg-black text-white text-[9px] font-bold uppercase tracking-widest px-2 py-1">NEW</span>
+                  </div>
+                  <div className="mt-3">
+                    <p className="text-[13px] font-bold uppercase tracking-tight leading-tight">{p.nom}</p>
+                    <p className="text-[12px] text-neutral-500 font-medium mt-1">
+                      {p.promoActive && p.promoPrice
+                        ? `${p.promoPrice.toLocaleString('fr-TN', { minimumFractionDigits: 2 })} DT`
+                        : `${p.salePrice?.toLocaleString('fr-TN', { minimumFractionDigits: 2 })} DT`}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ─── You May Also Like Slider ─── */}
-      <section className="py-24 bg-surface-container-low overflow-hidden">
-        <div className="px-6 md:px-12 mb-12">
-          <h2 className="text-2xl font-black uppercase tracking-tighter">
-            VOUS POURRIEZ AUSSI AIMER
-          </h2>
-        </div>
-        <div
-          ref={sliderRef}
-          className="flex gap-4 overflow-x-auto no-scrollbar px-6 md:px-12 snap-x"
-        >
-          {sliderItems.map((item) => (
-            <div key={item.name} className="min-w-[300px] md:min-w-[400px] snap-start cursor-pointer">
-              <div className="aspect-[3/4] bg-neutral-200 mb-4 overflow-hidden">
-                <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
-              </div>
-              <span className="block font-bold text-[12px] uppercase mb-1">{item.name}</span>
-              <span className="text-neutral-500 text-[11px]">{item.sub}</span>
-            </div>
-          ))}
-        </div>
-      </section>
+          </div>
+        </section>
+      )}
 
       {/* ─── Newsletter Section ─── */}
       <section className="py-32 px-6 md:px-12 bg-surface text-center flex flex-col items-center">

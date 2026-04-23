@@ -46,11 +46,27 @@ const typeOptions = [
 const filterStatutOptions = ['Tous les statuts', 'Actif', 'Expiré', 'Brouillon', 'Planifié']
 const filterTypeOptions = ['Tous les types', 'Pourcentage', 'Montant fixe', 'Livraison gratuite', 'Cadeau', 'BOGO']
 
-const autoTriggers = [
-  { icon: 'cake', label: 'Anniversaire client', desc: 'Cadeau automatique le jour de l\'anniversaire', color: 'text-pink-500', trigger: 'anniversaire' },
-  { icon: 'redeem', label: 'Première commande', desc: 'Bienvenue -10% sur le 1er achat', color: 'text-brand', trigger: 'premiere_commande' },
-  { icon: 'remove_shopping_cart', label: 'Panier abandonné', desc: 'Relance -5% après 24h d\'abandon', color: 'text-amber-500', trigger: 'panier_abandonne' },
-  { icon: 'psychology', label: 'Client hésitant', desc: 'Détecte hésitation → -10% flash auto', color: 'text-blue-500', trigger: 'hesitation' },
+const autoTriggersConfig = [
+  {
+    trigger: 'anniversaire',
+    icon: 'cake',
+    label: 'Anniversaire client',
+    color: 'text-pink-500',
+    bgColor: 'bg-pink-50',
+    desc: 'Coupon offert automatiquement si l\'anniversaire du client est dans les 30 prochains jours.',
+    rule: 'S\'applique uniquement aux comptes créés au moins 2 mois avant la date d\'anniversaire, pour éviter les abus.',
+    defaultValeur: 10,
+  },
+  {
+    trigger: 'premiere_commande',
+    icon: 'redeem',
+    label: 'Première commande',
+    color: 'text-brand',
+    bgColor: 'bg-brand/5',
+    desc: 'Remise de bienvenue proposée automatiquement lors du premier achat.',
+    rule: null,
+    defaultValeur: 10,
+  },
 ]
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -133,19 +149,22 @@ export default function Promotions() {
   /* ── Modal détail / performances ── */
   const [detailCoupon, setDetailCoupon] = useState(null)
 
+  /* ── Auto triggers expand/config ── */
+  const [expandedTrigger, setExpandedTrigger] = useState(null)
+  const [autoTriggerValeurs, setAutoTriggerValeurs] = useState({ anniversaire: '10', premiere_commande: '10', hesitation: '5' })
+
   /* ── Discounts state ── */
   const [discounts, setDiscounts] = useState([])
 
   /* ── Remise rapide ── */
-  const [remiseNom, setRemiseNom] = useState('')
   const [remiseProduits, setRemiseProduits] = useState([])
   const [remisePickerOpen, setRemisePickerOpen] = useState(false)
   const [remisePickerSearch, setRemisePickerSearch] = useState('')
   const [allProducts, setAllProducts] = useState([])
   const [remiseType, setRemiseType] = useState('pourcentage')
   const [remiseValeur, setRemiseValeur] = useState('')
-  const [remiseCategorie, setRemiseCategorie] = useState('')
-  const [remisePrixOriginal, setRemisePrixOriginal] = useState('')
+  const [remiseCatParent, setRemiseCatParent] = useState(null)
+  const [remiseCatEnfant, setRemiseCatEnfant] = useState(null)
   const [remiseDateDebut, setRemiseDateDebut] = useState('')
   const [remiseDateFin, setRemiseDateFin] = useState('')
 
@@ -164,7 +183,7 @@ export default function Promotions() {
       setCoupons(couponsData || [])
       setDiscounts(discountsData || [])
       setStats(statsData || null)
-      setCategoriesList((catsData || []).map(c => c.nom || c.name))
+      setCategoriesList(catsData || [])
       productApi.getAll().then(setAllProducts).catch(() => {})
     } catch {
       toast.error('Erreur lors du chargement des promotions.')
@@ -196,6 +215,26 @@ export default function Promotions() {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
   const paginated = filtered.slice((page - 1) * perPage, page * perPage)
+
+  /* ── Remise computed ── */
+  const parentCats = useMemo(() => categoriesList.filter(c => !c.parentId), [categoriesList])
+  const subCatsForParent = useMemo(() => {
+    if (!remiseCatParent) return []
+    return categoriesList.filter(c => c.parentId === remiseCatParent)
+  }, [categoriesList, remiseCatParent])
+  const productsForSubCat = useMemo(() => {
+    if (!remiseCatEnfant) return []
+    return allProducts.filter(p => p.categoryId === remiseCatEnfant)
+  }, [allProducts, remiseCatEnfant])
+  const autoNom = useMemo(() => {
+    if (remiseProduits.length === 0) return ''
+    const productPart = remiseProduits.length === 1
+      ? remiseProduits[0].nom
+      : `${remiseProduits.length} produits`
+    if (!remiseValeur) return productPart
+    const remisePart = remiseType === 'pourcentage' ? `−${remiseValeur}%` : `−${remiseValeur} DT`
+    return `${productPart} — ${remisePart}`
+  }, [remiseProduits, remiseType, remiseValeur])
 
   /* ── KPIs (from stats API) ── */
   const actifs = stats?.couponsActifs ?? 0
@@ -314,26 +353,34 @@ export default function Promotions() {
   const submitRemise = async () => {
     if (!remiseType) return toast.error('Le type de remise est obligatoire.')
     if (!remiseValeur) return toast.error('La valeur est obligatoire.')
+    if (remiseType === 'fixe' && remiseProduits.length > 0) {
+      const tooHigh = remiseProduits.some(p => parseFloat(remiseValeur) >= p.salePrice)
+      if (tooHigh) return toast.error('Le montant de remise doit être inférieur au prix du produit.')
+    }
     setSubmitting(true)
     try {
-      const catObj = categoriesList.indexOf(remiseCategorie) >= 0
-        ? (await categoryApi.getAll()).find(c => (c.nom || c.name) === remiseCategorie)
-        : null
+      const catObj = remiseCatEnfant ? categoriesList.find(c => c.id === remiseCatEnfant) : null
       const productNames = remiseProduits.map(p => p.nom).join(', ')
       const payload = {
-        nom: remiseNom || productNames || 'Remise rapide',
+        nom: autoNom || productNames || 'Remise rapide',
         type: remiseType,
         valeur: parseFloat(remiseValeur) || 0,
         productName: productNames || null,
         categoryId: catObj?.id || null,
-        prixOriginal: parseFloat(remisePrixOriginal) || 0,
+        prixOriginal: remiseProduits[0]?.salePrice || 0,
         dateDebut: remiseDateDebut || null,
         dateFin: remiseDateFin || null,
       }
       const created = await promotionApi.createDiscount(payload)
       setDiscounts(prev => [created, ...prev])
       toast.success('Remise appliquée avec succès !')
-      setRemiseNom(''); setRemiseProduits([]); setRemisePickerOpen(false); setRemiseValeur(''); setRemiseCategorie(''); setRemisePrixOriginal(''); setRemiseDateDebut(''); setRemiseDateFin('')
+      setRemiseProduits([])
+      setRemisePickerOpen(false)
+      setRemiseValeur('')
+      setRemiseCatParent(null)
+      setRemiseCatEnfant(null)
+      setRemiseDateDebut('')
+      setRemiseDateFin('')
       refreshStats()
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Erreur lors de la création de la remise.')
@@ -362,12 +409,74 @@ export default function Promotions() {
     }
   }
 
-  /* ── Remise preview ── */
-  const remisePrixOrig = parseFloat(remisePrixOriginal) || 0
-  const remiseMontant = remiseType === 'pourcentage'
-    ? (remisePrixOrig * (parseFloat(remiseValeur) || 0) / 100)
-    : (parseFloat(remiseValeur) || 0)
-  const prixFinal = Math.max(0, remisePrixOrig - remiseMontant)
+  /* ── Auto trigger handlers ── */
+  const handleCreateAutoTrigger = async (trigger, valeur) => {
+    if (!valeur || parseFloat(valeur) <= 0) return toast.error('Saisissez un taux valide.')
+    setSubmitting(true)
+    try {
+      const created = await promotionApi.createCoupon({
+        code: genCode(),
+        type: 'pourcentage',
+        valeur: parseFloat(valeur),
+        montantMin: 0,
+        limiteGlobale: 0,
+        limiteClient: 1,
+        segment: null,
+        categories: [],
+        produits: [],
+        auto: true,
+        autoTrigger: trigger,
+      })
+      setCoupons(prev => [created, ...prev])
+      toast.success('Déclencheur activé !')
+      refreshStats()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Erreur lors de la création.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleUpdateAutoTrigger = async (existing, valeur) => {
+    setSubmitting(true)
+    try {
+      const updated = await promotionApi.updateCoupon(existing.id, {
+        code: existing.code,
+        type: existing.type,
+        valeur: parseFloat(valeur) || existing.valeur,
+        montantMin: existing.montantMin || 0,
+        limiteGlobale: existing.limiteGlobale || 0,
+        limiteClient: existing.limiteClient || 1,
+        segment: existing.segment || null,
+        categories: existing.categories || [],
+        produits: [],
+        auto: true,
+        autoTrigger: existing.autoTrigger,
+      })
+      setCoupons(prev => prev.map(c => c.id === existing.id ? updated : c))
+      toast.success('Mis à jour !')
+    } catch {
+      toast.error('Erreur lors de la mise à jour.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  /* ── Remise preview helper ── */
+  const calcRemisePreview = (salePrice) => {
+    const orig = salePrice || 0
+    const montant = remiseType === 'pourcentage'
+      ? orig * (parseFloat(remiseValeur) || 0) / 100
+      : parseFloat(remiseValeur) || 0
+    return { orig, montant, final: Math.max(0, orig - montant) }
+  }
+  const getProductThumb = (p) => {
+    if (p.imageUrl) return p.imageUrl
+    try {
+      const ci = JSON.parse(p.colorImages || '[]')
+      return ci[0]?.images?.[0] || null
+    } catch { return null }
+  }
 
   if (loading) return <div className="flex items-center justify-center h-96"><Spinner /></div>
 
@@ -633,11 +742,40 @@ export default function Promotions() {
                 </div>
               </div>
 
+              {/* ── Auto name preview ── FIRST THING VISIBLE */}
+              <div className={`rounded-xl border-2 px-5 py-4 transition-all ${autoNom ? 'border-badge/40 bg-badge/5' : 'border-dashed border-slate-200 bg-slate-50'}`}>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Nom généré automatiquement</p>
+                <p className={`text-lg font-bold tracking-tight ${autoNom ? 'text-slate-900' : 'text-slate-300 italic'}`}>
+                  {autoNom || '— Sélectionner un produit pour voir le nom —'}
+                </p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* ── Catégorie parente ── */}
                 <div className="space-y-2">
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Nom de la remise</label>
-                  <input value={remiseNom} onChange={e => setRemiseNom(e.target.value)} placeholder="Ex: Promo été..."
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Catégorie</label>
+                  <select
+                    value={remiseCatParent ?? ''}
+                    onChange={e => { setRemiseCatParent(e.target.value ? Number(e.target.value) : null); setRemiseCatEnfant(null); setRemiseProduits([]); setRemisePickerOpen(false) }}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none"
+                  >
+                    <option value="">— Toutes les catégories —</option>
+                    {parentCats.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+                  </select>
+                </div>
+
+                {/* ── Sous-catégorie ── */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Sous-catégorie</label>
+                  <select
+                    value={remiseCatEnfant ?? ''}
+                    onChange={e => { setRemiseCatEnfant(e.target.value ? Number(e.target.value) : null); setRemiseProduits([]); setRemisePickerOpen(false) }}
+                    disabled={!remiseCatParent || subCatsForParent.length === 0}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <option value="">{remiseCatParent && subCatsForParent.length === 0 ? '— Aucune sous-catégorie —' : remiseCatParent ? '— Sélectionner —' : "— Choisir une catégorie d'abord —"}</option>
+                    {subCatsForParent.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+                  </select>
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
@@ -650,17 +788,24 @@ export default function Promotions() {
                     )}
                   </label>
 
-                  {/* Selected tags */}
+                  {/* Selected tags with image */}
                   {remiseProduits.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-2">
-                      {remiseProduits.map(p => (
-                        <span key={p.id} className="inline-flex items-center gap-1.5 bg-brand/10 text-brand border border-brand/20 px-2.5 py-1 rounded-full text-xs font-bold">
-                          {p.nom}
-                          <button type="button" onClick={() => toggleRemiseProduit(p)} className="hover:text-red-500 transition-colors">
-                            <span className="material-symbols-outlined text-[12px]">close</span>
-                          </button>
-                        </span>
-                      ))}
+                      {remiseProduits.map(p => {
+                        const thumb = getProductThumb(p)
+                        return (
+                          <span key={p.id} className="inline-flex items-center gap-2 bg-brand/10 border border-brand/20 pl-1 pr-2.5 py-1 rounded-full text-xs font-bold text-brand">
+                            {thumb
+                              ? <img src={thumb} alt={p.nom} className="w-6 h-6 rounded-full object-cover border border-brand/30" />
+                              : <span className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center"><span className="material-symbols-outlined text-[11px] text-slate-400">image</span></span>
+                            }
+                            {p.nom}
+                            <button type="button" onClick={() => toggleRemiseProduit(p)} className="hover:text-red-500 transition-colors ml-0.5">
+                              <span className="material-symbols-outlined text-[12px]">close</span>
+                            </button>
+                          </span>
+                        )
+                      })}
                     </div>
                   )}
 
@@ -668,7 +813,8 @@ export default function Promotions() {
                   <button
                     type="button"
                     onClick={() => { setRemisePickerOpen(v => !v); setRemisePickerSearch('') }}
-                    className={`w-full flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm transition-all ${
+                    disabled={!remiseCatEnfant}
+                    className={`w-full flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
                       remisePickerOpen
                         ? 'border-brand bg-brand/5 text-brand'
                         : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-brand hover:text-brand'
@@ -677,11 +823,11 @@ export default function Promotions() {
                     <span className="material-symbols-outlined text-lg">
                       {remisePickerOpen ? 'expand_less' : 'add_circle'}
                     </span>
-                    {remisePickerOpen ? 'Fermer la sélection' : 'Sélectionner des produits'}
+                    {!remiseCatEnfant ? 'Choisir une sous-catégorie pour voir les produits' : remisePickerOpen ? 'Fermer la sélection' : 'Sélectionner des produits'}
                   </button>
 
                   {/* Inline product picker */}
-                  {remisePickerOpen && (
+                  {remisePickerOpen && remiseCatEnfant && (
                     <div className="border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm">
                       {/* Search */}
                       <div className="p-3 border-b border-slate-100">
@@ -696,9 +842,9 @@ export default function Promotions() {
                         </div>
                       </div>
 
-                      {/* Product list */}
-                      <div className="max-h-52 overflow-y-auto divide-y divide-slate-50">
-                        {allProducts
+                      {/* Product list with images */}
+                      <div className="max-h-64 overflow-y-auto divide-y divide-slate-50">
+                        {productsForSubCat
                           .filter(p =>
                             !remisePickerSearch ||
                             p.nom?.toLowerCase().includes(remisePickerSearch.toLowerCase()) ||
@@ -706,6 +852,7 @@ export default function Promotions() {
                           )
                           .map(p => {
                             const selected = remiseProduits.some(r => r.id === p.id)
+                            const thumb = getProductThumb(p)
                             return (
                               <label
                                 key={p.id}
@@ -719,6 +866,10 @@ export default function Promotions() {
                                   onChange={() => toggleRemiseProduit(p)}
                                   className="w-4 h-4 text-brand rounded border-slate-300 accent-brand cursor-pointer"
                                 />
+                                {thumb
+                                  ? <img src={thumb} alt={p.nom} className="w-10 h-10 rounded-lg object-cover border border-slate-200 flex-shrink-0" />
+                                  : <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center flex-shrink-0"><span className="material-symbols-outlined text-slate-400 text-lg">image</span></div>
+                                }
                                 <div className="flex-1 min-w-0">
                                   <p className={`text-sm font-medium truncate ${selected ? 'text-brand' : 'text-slate-700'}`}>{p.nom}</p>
                                   {p.sku && <p className="text-[10px] text-slate-400 uppercase tracking-wider">{p.sku}</p>}
@@ -727,12 +878,12 @@ export default function Promotions() {
                               </label>
                             )
                           })}
-                        {allProducts.filter(p =>
+                        {productsForSubCat.filter(p =>
                           !remisePickerSearch ||
                           p.nom?.toLowerCase().includes(remisePickerSearch.toLowerCase()) ||
                           p.sku?.toLowerCase().includes(remisePickerSearch.toLowerCase())
                         ).length === 0 && (
-                          <p className="text-center text-slate-400 text-sm py-6">Aucun produit trouvé</p>
+                          <p className="text-center text-slate-400 text-sm py-6">Aucun produit dans cette sous-catégorie</p>
                         )}
                       </div>
 
@@ -754,25 +905,36 @@ export default function Promotions() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Appliquer à une catégorie</label>
-                  <CustomSelect value={remiseCategorie} onChange={setRemiseCategorie} options={['', ...categoriesList]} placeholder="Catégorie entière (optionnel)" />
-                </div>
-
-                <div className="space-y-2">
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Type de remise</label>
-                  <CustomSelect value={remiseType} onChange={setRemiseType} options={[{ value: 'pourcentage', label: 'Pourcentage (%)' }, { value: 'fixe', label: 'Montant fixe (DT)' }]} />
+                  <select
+                    value={remiseType}
+                    onChange={e => { setRemiseType(e.target.value); setRemiseValeur('') }}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none"
+                  >
+                    <option value="pourcentage">Pourcentage (%)</option>
+                    <option value="fixe">Montant fixe (DT)</option>
+                  </select>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Valeur</label>
-                  <input type="number" value={remiseValeur} onChange={e => setRemiseValeur(e.target.value)} placeholder="Ex: 15"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Prix original (DT)</label>
-                  <input type="number" value={remisePrixOriginal} onChange={e => setRemisePrixOriginal(e.target.value)} placeholder="Ex: 100"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    {remiseType === 'pourcentage' ? 'Taux de remise (%)' : 'Montant de remise (DT)'}
+                  </label>
+                  <div className="relative">
+                    <input type="number" min="0" max={remiseType === 'pourcentage' ? 100 : undefined}
+                      value={remiseValeur} onChange={e => setRemiseValeur(e.target.value)}
+                      placeholder={remiseType === 'pourcentage' ? 'Ex: 15' : 'Ex: 50'}
+                      className="w-full px-4 py-2.5 pr-12 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none" />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
+                      {remiseType === 'pourcentage' ? '%' : 'DT'}
+                    </span>
+                  </div>
+                  {remiseType === 'fixe' && remiseProduits.length > 0 && remiseValeur && parseFloat(remiseValeur) >= (remiseProduits[0]?.salePrice || Infinity) && (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px]">warning</span>
+                      Montant doit être inférieur au prix du produit ({remiseProduits[0]?.salePrice?.toFixed(2)} DT)
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -801,20 +963,34 @@ export default function Promotions() {
                   <span className="material-symbols-outlined text-brand">preview</span>
                   Prévisualisation prix
                 </h4>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-500">Prix original</span>
-                    <span className="text-sm font-bold text-slate-800">{remisePrixOrig.toFixed(2)} DT</span>
+                {remiseProduits.length === 0 ? (
+                  <p className="text-sm text-slate-400 italic text-center py-4">Sélectionner un produit pour voir la prévisualisation</p>
+                ) : (
+                  <div className="space-y-5">
+                    {remiseProduits.map(p => {
+                      const { orig, montant, final } = calcRemisePreview(p.salePrice)
+                      return (
+                        <div key={p.id} className="space-y-2">
+                          <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wide truncate">{p.nom}</p>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-slate-500">Prix original</span>
+                              <span className="font-bold text-slate-800">{orig.toFixed(2)} DT</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm text-red-500">
+                              <span>Remise {remiseType === 'pourcentage' ? `(${remiseValeur || 0}%)` : ''}</span>
+                              <span className="font-bold">−{montant.toFixed(2)} DT</span>
+                            </div>
+                            <div className="border-t border-slate-200 pt-1.5 flex items-center justify-between">
+                              <span className="text-sm font-bold text-slate-800">Prix final</span>
+                              <span className="text-base font-bold text-brand">{final.toFixed(2)} DT</span>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
-                  <div className="flex items-center justify-between text-red-500">
-                    <span className="text-sm">Remise {remiseType === 'pourcentage' ? `(${remiseValeur || 0}%)` : `(${remiseValeur || 0} DT)`}</span>
-                    <span className="text-sm font-bold">-{remiseMontant.toFixed(2)} DT</span>
-                  </div>
-                  <div className="border-t border-slate-200 pt-3 flex items-center justify-between">
-                    <span className="text-sm font-bold text-slate-800">Prix final</span>
-                    <span className="text-xl font-bold text-brand">{prixFinal.toFixed(2)} DT</span>
-                  </div>
-                </div>
+                )}
               </div>
 
               <div className="bg-brand/5 border border-brand/10 p-5 rounded-xl text-center">
@@ -842,10 +1018,9 @@ export default function Promotions() {
                 <table className="w-full text-left">
                   <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider font-bold">
                     <tr>
-                      <th className="px-6 py-3">Nom</th>
-                      <th className="px-6 py-3">Type</th>
-                      <th className="px-6 py-3">Valeur</th>
                       <th className="px-6 py-3">Produit / Catégorie</th>
+                      <th className="px-6 py-3">Type</th>
+                      <th className="px-6 py-3">Taux / Montant</th>
                       <th className="px-6 py-3">Prix</th>
                       <th className="px-6 py-3 text-center">Statut</th>
                       <th className="px-6 py-3">Expiration</th>
@@ -855,15 +1030,17 @@ export default function Promotions() {
                   <tbody className="divide-y divide-slate-100">
                     {discounts.map(d => (
                       <tr key={d.id} className="hover:bg-slate-50/50 transition-colors group">
-                        <td className="px-6 py-3.5 text-sm font-bold text-slate-800">{d.nom || '—'}</td>
+                        <td className="px-6 py-3.5">
+                          <p className="text-sm font-bold text-slate-800">{d.productName || d.categoryName || d.nom || '—'}</p>
+                          {d.nom && d.nom !== (d.productName || d.categoryName) && (
+                            <p className="text-[10px] text-slate-400">{d.nom}</p>
+                          )}
+                        </td>
                         <td className="px-6 py-3.5">
                           <span className="text-xs font-bold text-slate-600 uppercase">{d.type === 'pourcentage' ? 'Pourcentage' : 'Fixe'}</span>
                         </td>
                         <td className="px-6 py-3.5 text-sm font-bold text-slate-800">
                           {d.type === 'pourcentage' ? `${d.valeur}%` : `${d.valeur} DT`}
-                        </td>
-                        <td className="px-6 py-3.5 text-sm text-slate-600">
-                          {d.productName || d.categoryName || '—'}
                         </td>
                         <td className="px-6 py-3.5">
                           {d.prixOriginal > 0 ? (
@@ -898,27 +1075,116 @@ export default function Promotions() {
 
       {/* ════════════ TAB : Coupons Automatiques ════════════ */}
       {tab === 'auto' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {autoTriggers.map((t, i) => (
-              <div key={i} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-start gap-4">
-                <div className={`w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center ${t.color} shrink-0`}>
-                  <span className="material-symbols-outlined text-2xl">{t.icon}</span>
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-slate-800 text-sm">{t.label}</h4>
-                    <button onClick={() => { setNewAuto(true); setNewCode(genCode()); setNewType('pourcentage'); setNewValeur('10'); setShowCreate(true) }}
-                      className="px-3 py-1 bg-badge/10 text-badge text-[10px] font-bold rounded-lg hover:bg-badge/20 transition-colors uppercase">
-                      Créer
+        <div className="space-y-4">
+          {autoTriggersConfig.map((t) => {
+            const existing = coupons.find(c => c.auto && c.autoTrigger === t.trigger)
+            const isExpanded = expandedTrigger === t.trigger
+            const localValeur = autoTriggerValeurs[t.trigger] ?? String(t.defaultValeur)
+            const isActif = existing?.statut === 'actif'
+
+            return (
+              <div key={t.trigger} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                {/* Header */}
+                <div className="p-5 flex items-center gap-4">
+                  <div className={`w-12 h-12 ${t.bgColor} rounded-xl flex items-center justify-center ${t.color} shrink-0`}>
+                    <span className="material-symbols-outlined text-2xl">{t.icon}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-bold text-slate-800 text-sm">{t.label}</h4>
+                      {existing && (
+                        <span className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wide ${
+                          isActif ? 'bg-brand text-white' : 'bg-slate-200 text-slate-500'
+                        }`}>{isActif ? 'ACTIF' : 'INACTIF'}</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5">{t.desc}</p>
+                    {existing && (
+                      <p className="text-[10px] font-bold text-brand mt-0.5">
+                        Code&nbsp;: <span className="font-mono">{existing.code}</span> · {existing.valeur}%
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {existing && (
+                      <button
+                        onClick={() => toggleStatut(existing.id)}
+                        title={isActif ? 'Désactiver' : 'Activer'}
+                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+                          isActif ? 'bg-brand' : 'bg-slate-200'
+                        }`}
+                      >
+                        <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${
+                          isActif ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setExpandedTrigger(isExpanded ? null : t.trigger)}
+                      className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all"
+                      title="Configuration"
+                    >
+                      <span className="material-symbols-outlined text-lg">{isExpanded ? 'expand_less' : 'tune'}</span>
                     </button>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">{t.desc}</p>
                 </div>
-              </div>
-            ))}
-          </div>
 
+                {/* Config panel */}
+                {isExpanded && (
+                  <div className="border-t border-slate-100 p-5 bg-slate-50/50 space-y-4">
+                    {t.rule && (
+                      <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-100 rounded-lg">
+                        <span className="material-symbols-outlined text-amber-500 shrink-0" style={{ fontSize: '16px' }}>info</span>
+                        <p className="text-[11px] text-amber-700 leading-relaxed">{t.rule}</p>
+                      </div>
+                    )}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Taux de remise (%)</label>
+                      <div className="relative w-48">
+                        <input
+                          type="number" min="1" max="100"
+                          value={localValeur}
+                          onChange={e => setAutoTriggerValeurs(v => ({ ...v, [t.trigger]: e.target.value }))}
+                          className="w-full px-4 py-2.5 pr-10 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">%</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {existing ? (
+                        <>
+                          <button
+                            onClick={() => handleUpdateAutoTrigger(existing, localValeur)}
+                            disabled={submitting}
+                            className="px-5 py-2 bg-slate-900 text-white text-sm font-bold rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-all"
+                          >
+                            Mettre à jour
+                          </button>
+                          <button
+                            onClick={() => supprimerCoupon(existing.id)}
+                            className="px-5 py-2 border border-red-200 text-red-600 text-sm font-bold rounded-lg hover:bg-red-50 transition-all"
+                          >
+                            Supprimer
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => handleCreateAutoTrigger(t.trigger, localValeur)}
+                          disabled={submitting}
+                          className="px-5 py-2 bg-slate-900 text-white text-sm font-bold rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-all flex items-center gap-2"
+                        >
+                          <span className="material-symbols-outlined text-lg">add_circle</span>
+                          Activer ce déclencheur
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+
+          {/* Coupons automatiques actifs */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
             <h4 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-brand">smart_toy</span>
@@ -928,17 +1194,29 @@ export default function Promotions() {
               {coupons.filter(c => c.auto).map(c => (
                 <div key={c.id} className="flex items-center justify-between bg-slate-50 rounded-lg p-4 border border-slate-100">
                   <div className="flex items-center gap-3">
-                    <span className="px-3 py-1 bg-brand/5 text-brand font-bold text-sm rounded-lg border border-brand/10">{c.code}</span>
-                    <span className="text-xs text-slate-500">{c.type === 'pourcentage' ? `${c.valeur}%` : `${c.valeur} DT`} · {segmentOptions.find(s => s.value === (c.segment || ''))?.label || 'Tous les clients'}</span>
+                    <span className="px-3 py-1 bg-brand/5 text-brand font-bold text-sm rounded-lg border border-brand/10 font-mono">{c.code}</span>
+                    <div>
+                      <span className="text-xs text-slate-600 font-medium">
+                        {autoTriggersConfig.find(t => t.trigger === c.autoTrigger)?.label || c.autoTrigger || 'Manuel'}
+                      </span>
+                      <span className="text-xs text-slate-400 ml-2">· {c.type === 'pourcentage' ? `${c.valeur}%` : `${c.valeur} DT`}</span>
+                    </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-brand">{c.utilisations} utilisations</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold font-badge ${(statutConfig[c.statut] || statutConfig.actif).bg}`}>{(statutConfig[c.statut] || statutConfig.actif).label}</span>
+                    <span className="text-xs font-bold text-brand">{c.utilisations} utilisation(s)</span>
+                    <button onClick={() => toggleStatut(c.id)}>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold font-badge ${(statutConfig[c.statut] || statutConfig.actif).bg}`}>
+                        {(statutConfig[c.statut] || statutConfig.actif).label}
+                      </span>
+                    </button>
+                    <button onClick={() => supprimerCoupon(c.id)} className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-all" title="Supprimer">
+                      <span className="material-symbols-outlined text-[16px]">delete</span>
+                    </button>
                   </div>
                 </div>
               ))}
               {coupons.filter(c => c.auto).length === 0 && (
-                <p className="text-sm text-slate-400 text-center py-6">Aucun coupon automatique configuré.</p>
+                <p className="text-sm text-slate-400 text-center py-6">Aucun déclencheur actif pour le moment.</p>
               )}
             </div>
           </div>

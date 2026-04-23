@@ -33,6 +33,8 @@ public class ProductRequest {
 
     // Badges
     private boolean badgeNouveau;
+    /** Duration in days for the Nouveauté badge: 7 or 14 */
+    private Integer nouveauteDureeJours;
     private boolean badgeBestSeller;
     private boolean badgePromo;
     private boolean badgeExclusif;
@@ -67,6 +69,12 @@ public class ProductRequest {
 
     // Upsell
     private String upsellTags;
+
+    // Mix & Match
+    private boolean mixMatchEnabled = true;
+    private String mixMatchGender = "auto";
+    private String mixMatchRole = "auto";
+    private int mixMatchImageIndex = 2;
 
     // Variant rows
     private List<ProductVariantRequest> variants;

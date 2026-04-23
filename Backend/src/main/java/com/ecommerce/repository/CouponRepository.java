@@ -20,6 +20,8 @@ public interface CouponRepository extends JpaRepository<Coupon, Long> {
 
     List<Coupon> findByAutoTrue();
 
+    Optional<Coupon> findFirstByAutoTrueAndAutoTriggerAndStatut(String autoTrigger, String statut);
+
     @Query("SELECT c FROM Coupon c WHERE c.segment = :segment OR c.segment IS NULL")
     List<Coupon> findBySegmentOrAll(@Param("segment") String segment);
 

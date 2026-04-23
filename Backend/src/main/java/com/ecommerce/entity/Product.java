@@ -75,6 +75,12 @@ public class Product {
     @Builder.Default
     private boolean badgeNouveau = false;
 
+    /** When badgeNouveau was last activated */
+    private java.time.LocalDateTime nouveauteSince;
+
+    /** Duration in days chosen by admin: 7 or 14 (null = no auto-expiry) */
+    private Integer nouveauteDureeJours;
+
     @Builder.Default
     private boolean badgeBestSeller = false;
 
@@ -138,6 +144,23 @@ public class Product {
     // ── Upsell / Cross-sell (comma-separated product names) ───────
     @Column(name = "upsell_tags", columnDefinition = "TEXT")
     private String upsellTags;
+
+    // ── Mix & Match ───────────────────────────────────────────────
+    @Builder.Default
+    @Column(name = "mix_match_enabled", nullable = false)
+    private boolean mixMatchEnabled = true;
+
+    @Builder.Default
+    @Column(name = "mix_match_gender")
+    private String mixMatchGender = "auto";
+
+    @Builder.Default
+    @Column(name = "mix_match_role")
+    private String mixMatchRole = "auto";
+
+    @Builder.Default
+    @Column(name = "mix_match_image_index", nullable = false)
+    private int mixMatchImageIndex = 2;
 
     // ── Variants ──────────────────────────────────────────────────
     @Builder.Default

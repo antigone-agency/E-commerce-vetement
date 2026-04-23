@@ -20,7 +20,9 @@ public class ProductResponse {
     private String description;
 
     private Long categoryId;
+    private String categorySlug;
     private Long parentCategoryId;
+    private String parentCategorySlug;
     private String parentCategoryNom;
     private String categoryNom;
     private String subCategory;
@@ -46,6 +48,8 @@ public class ProductResponse {
 
     // Badges
     private boolean badgeNouveau;
+    private java.time.LocalDateTime nouveauteSince;
+    private Integer nouveauteDureeJours;
     private boolean badgeBestSeller;
     private boolean badgePromo;
     private boolean badgeExclusif;
@@ -80,6 +84,12 @@ public class ProductResponse {
 
     // Upsell
     private String upsellTags;
+
+    // Mix & Match
+    private boolean mixMatchEnabled;
+    private String mixMatchGender;
+    private String mixMatchRole;
+    private int mixMatchImageIndex;
 
     // Variant rows
     private List<ProductVariantResponse> variants;

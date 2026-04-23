@@ -128,6 +128,13 @@ public class CouponService {
         return mapToResponse(coupon);
     }
 
+    // ── Get active auto-trigger coupon by trigger name ────────────
+    @Transactional(readOnly = true)
+    public Optional<CouponResponse> getActiveAutoTriggerCoupon(String trigger) {
+        return couponRepository.findFirstByAutoTrueAndAutoTriggerAndStatut(trigger, "actif")
+                .map(this::mapToResponse);
+    }
+
     // ── Validate coupon for a user ─────────────────────────────────
     @Transactional(readOnly = true)
     public CouponResponse validateCoupon(String code, Long userId) {

@@ -11,6 +11,7 @@ import Products from './pages/Products'
 import ProductDetail from './pages/ProductDetail'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
+import MixAndMatch from './pages/MixAndMatch'
 
 export default function App() {
   return (
@@ -33,6 +34,8 @@ export default function App() {
             <Route path="/produits/:categorySlug/:subCategorySlug" element={<Products />} />
             <Route path="/collection/:collectionSlug" element={<Products />} />
             <Route path="/produit/:slug" element={<ProductDetail />} />
+            <Route path="/mix-and-match/:rootSlug" element={<MixAndMatch />} />
+            <Route path="/mix-and-match/:rootSlug/:subCategorySlug" element={<MixAndMatch />} />
           </Route>
         </Routes>
       </BrowserRouter>

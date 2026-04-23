@@ -6,6 +6,13 @@ import PageHeader from '../components/ui/PageHeader'
 import { productApi } from '../api/productApi'
 import { categoryApi } from '../api/categoryApi'
 import { collectionApi } from '../api/collectionApi'
+import {
+  MIX_MATCH_GENDER_OPTIONS,
+  MIX_MATCH_ROLE_OPTIONS,
+  getMixMatchGenderLabel,
+  getMixMatchRoleLabel,
+  getMixMatchSuggestions,
+} from '../utils/mixMatch'
 
 // ── Palette de couleurs françaises (79 couleurs) ─────────────────────────────
 const COLOR_MAP = {
@@ -243,6 +250,7 @@ function AjouterProduit() {
     promo: true,
     exclusif: false,
   })
+  const [nouveauteDuree, setNouveauteDuree] = useState(7)
 
   // Visibility
   const [visibility, setVisibility] = useState({
@@ -259,6 +267,10 @@ function AjouterProduit() {
   const [variants, setVariants] = useState(initialVariants)
   const [colorImages, setColorImages] = useState({})
   const [activeColorTab, setActiveColorTab] = useState('Général')
+  const [mixMatchEnabled, setMixMatchEnabled] = useState(true)
+  const [mixMatchGender, setMixMatchGender] = useState('auto')
+  const [mixMatchRole, setMixMatchRole] = useState('auto')
+  const [mixMatchImageIndex, setMixMatchImageIndex] = useState(2)
 
   useEffect(() => {
     const list = colors.split(',').map(c => c.trim()).filter(Boolean)
@@ -330,11 +342,14 @@ function AjouterProduit() {
     return id
   }
   const subCategories = parentCategories.find((p) => String(p.id) === category)?.children || []
+  const selectedParentCategory = parentCategories.find((p) => String(p.id) === category) || null
+  const selectedSubCategory = subCategories.find((s) => String(s.id) === subCategory) || null
   const selectedCategoryNom = parentCategories.find((p) => String(p.id) === category)?.nom || ''
   const filteredCollections = allCollections.filter((col) =>
     col.menuParentCategory === selectedCategoryNom ||
     (Array.isArray(col.linkedCategories) && col.linkedCategories.includes(selectedCategoryNom))
   )
+  const mixMatchSuggestions = getMixMatchSuggestions(selectedParentCategory, selectedSubCategory)
 
   const hasPromo = promoActive && parseFloat(promoPrice) > 0 && parseFloat(promoPrice) < parseFloat(salePrice)
 
@@ -373,6 +388,7 @@ function AjouterProduit() {
         stock: normalizedVariants.reduce((sum, v) => sum + (parseInt(v.stock) || 0), 0),
         statut: 'actif',
         badgeNouveau: badges.nouveau,
+        nouveauteDureeJours: badges.nouveau ? nouveauteDuree : null,
         badgeBestSeller: badges.bestSeller,
         badgePromo: badges.promo,
         badgeExclusif: badges.exclusif,
@@ -388,6 +404,10 @@ function AjouterProduit() {
         colors: normalizedColors,
         sizes: selectedSizes.join(', '),
         colorImages: JSON.stringify(normalizedColorImages),
+        mixMatchEnabled,
+        mixMatchGender,
+        mixMatchRole,
+        mixMatchImageIndex,
         variants: normalizedVariants.map((v) => ({
           label: v.label,
           colorSwatch: v.colorSwatch,
@@ -775,6 +795,11 @@ function AjouterProduit() {
                                   Principale
                                 </span>
                               )}
+                              {idx === mixMatchImageIndex && (
+                                <span className="absolute bottom-1 right-1 bg-slate-900 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                                  Mix & Match
+                                </span>
+                              )}
                             </div>
                           ) : (
                             <label className="cursor-pointer block">
@@ -807,6 +832,58 @@ function AjouterProduit() {
                         </div>
                       )
                     })}
+                  </div>
+                </div>
+              </div>
+            </Section>
+
+            <Section title="Mix & Match">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Suggestion mannequin</p>
+                    <p className="text-lg font-bold text-slate-800">
+                      {getMixMatchGenderLabel(mixMatchSuggestions.gender)}
+                    </p>
+                    <p className="text-xs text-slate-500">Déduit depuis la catégorie racine sélectionnée.</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Suggestion placement</p>
+                    <p className="text-lg font-bold text-slate-800">
+                      {getMixMatchRoleLabel(mixMatchSuggestions.role)}
+                    </p>
+                    <p className="text-xs text-slate-500">Déduit depuis la sous-catégorie. Robe et combinaison deviennent une pièce unique.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-4">
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">Activer sur le configurateur</p>
+                    <p className="text-xs text-slate-500">Si désactivé, le produit n'apparaît pas dans l'expérience mannequin.</p>
+                  </div>
+                  <Toggle checked={mixMatchEnabled} onChange={setMixMatchEnabled} />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <Label>Mannequin</Label>
+                    <CustomSelect value={mixMatchGender} onChange={setMixMatchGender} options={MIX_MATCH_GENDER_OPTIONS} />
+                  </div>
+                  <div>
+                    <Label>Placement silhouette</Label>
+                    <CustomSelect value={mixMatchRole} onChange={setMixMatchRole} options={MIX_MATCH_ROLE_OPTIONS} />
+                  </div>
+                  <div>
+                    <Label>Image utilisée</Label>
+                    <CustomSelect
+                      value={String(mixMatchImageIndex)}
+                      onChange={(value) => setMixMatchImageIndex(parseInt(value, 10))}
+                      options={[
+                        { value: '0', label: '1re image' },
+                        { value: '1', label: '2e image' },
+                        { value: '2', label: '3e image recommandée' },
+                      ]}
+                    />
                   </div>
                 </div>
               </div>
@@ -1001,6 +1078,28 @@ function AjouterProduit() {
                     />
                   </div>
                 ))}
+                {/* Duration picker — shown only when Nouveauté is active */}
+                {badges.nouveau && (
+                  <div className="flex items-center gap-3 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
+                    <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Durée Nouveauté</span>
+                    <div className="flex gap-2 ml-auto">
+                      {[7, 14].map(d => (
+                        <button
+                          key={d}
+                          type="button"
+                          onClick={() => setNouveauteDuree(d)}
+                          className={`px-3 py-1 rounded text-xs font-bold border transition-colors ${
+                            nouveauteDuree === d
+                              ? 'bg-emerald-600 text-white border-emerald-600'
+                              : 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50'
+                          }`}
+                        >
+                          {d} jours
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

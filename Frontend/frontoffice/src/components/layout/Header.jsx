@@ -448,6 +448,21 @@ export default function Header() {
                     ))}
                   </>
                 )}
+                {['HOMME', 'FEMME'].includes(activeCategory) && (
+                  <div className="pt-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowNav(false)
+                        navigate(`/mix-and-match/${(current.slug || activeCategory.toLowerCase()).replace(/^\//, '')}`)
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full border border-primary px-4 py-3 text-[10px] tracking-[0.22em] text-primary transition hover:bg-primary hover:text-white"
+                    >
+                      <span className="material-symbols-outlined text-sm">checkroom</span>
+                      MIX & MATCH
+                    </button>
+                  </div>
+                )}
                 <div className="pt-8">
                   <a href="#" onClick={(e) => { e.preventDefault(); setShowNav(false); navigate(`/produits/${(current.slug || activeCategory.toLowerCase()).replace(/^\//, '')}`) }} className="text-[10px] tracking-[0.2em] border-b border-primary pb-1 inline-block">VIEW ALL</a>
                 </div>

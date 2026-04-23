@@ -8,7 +8,6 @@ import PageHeader from '../components/ui/PageHeader'
 import CustomSelect from '../components/ui/CustomSelect'
 import Spinner from '../components/ui/Spinner'
 
-const paysOptions = ['France', 'Belgique', 'Suisse', 'Canada', 'Maroc', 'Tunisie', 'Algérie', 'États-Unis', 'Allemagne', 'Autre']
 
 const roleIconMap = {
   SUPER_ADMIN: { icon: 'admin_panel_settings', iconBg: 'bg-red-50 text-red-600' },
@@ -203,13 +202,6 @@ export default function DetailClient() {
   const currentRole = roles.find(r => r.name === role)
   const stBadge = statusBadge[status] || statusBadge.ACTIVE
 
-  const FieldLabel = ({ children, required }) => (
-    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-      {children}{required && <span className="text-red-500 ml-1">*</span>}
-    </label>
-  )
-  const inputCls = 'w-full px-3.5 py-2.5 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all'
-
   if (loading) return <div className="flex items-center justify-center h-96"><Spinner size="lg" /></div>
   if (!client) return <div className="p-6 text-center text-slate-500">Client introuvable.</div>
 
@@ -237,58 +229,39 @@ export default function DetailClient() {
         {/* ══ LEFT 2/3 ══════════════════════════════════════════════════════ */}
         <div className="lg:col-span-2 space-y-6">
 
-          {/* Informations personnelles */}
+          {/* Informations personnelles — lecture seule */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
               <div className="w-8 h-8 bg-badge/10 text-badge rounded-lg flex items-center justify-center">
                 <span className="material-symbols-outlined text-lg">person</span>
               </div>
               <h3 className="text-sm font-bold text-slate-800">Informations personnelles</h3>
-              <span className={`ml-auto px-2.5 py-1 rounded-full text-[10px] font-bold font-badge uppercase ${stBadge.cls}`}>{stBadge.label}</span>
+              <span className={`ml-auto px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${stBadge.cls}`}>{stBadge.label}</span>
             </div>
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <FieldLabel required>Prénom</FieldLabel>
-                <input value={firstName} onChange={e => setFirstName(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <FieldLabel required>Nom</FieldLabel>
-                <input value={lastName} onChange={e => setLastName(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <FieldLabel required>Email</FieldLabel>
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <FieldLabel>Téléphone</FieldLabel>
-                <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <FieldLabel>Date de naissance</FieldLabel>
-                <input type="date" value={dateOfBirth} onChange={e => setDateOfBirth(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <FieldLabel>Genre</FieldLabel>
-                <CustomSelect value={gender} onChange={setGender} options={[
-                  { value: 'HOMME', label: 'Homme' },
-                  { value: 'FEMME', label: 'Femme' },
-                ]} />
-              </div>
-              <div>
-                <FieldLabel>Adresse</FieldLabel>
-                <input value={address} onChange={e => setAddress(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <FieldLabel>Ville</FieldLabel>
-                <input value={city} onChange={e => setCity(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <FieldLabel>Code postal</FieldLabel>
-                <input value={postalCode} onChange={e => setPostalCode(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <FieldLabel>Pays</FieldLabel>
-                <CustomSelect value={country} onChange={setCountry} options={paysOptions} />
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-0 divide-y divide-slate-50 md:divide-y-0">
+                {[
+                  { icon: 'badge',        label: 'Prénom',            value: firstName || '—' },
+                  { icon: 'badge',        label: 'Nom',               value: lastName  || '—' },
+                  { icon: 'mail',         label: 'Email',             value: email     || '—' },
+                  { icon: 'phone',        label: 'Téléphone',         value: phone     || '—' },
+                  { icon: 'cake',         label: 'Date de naissance', value: dateOfBirth ? new Date(dateOfBirth).toLocaleDateString('fr-FR') : '—' },
+                  { icon: 'wc',           label: 'Genre',             value: gender === 'HOMME' ? 'Homme' : gender === 'FEMME' ? 'Femme' : '—' },
+                  { icon: 'home',         label: 'Adresse',           value: address   || '—' },
+                  { icon: 'location_city',label: 'Ville',             value: city      || '—' },
+                  { icon: 'markunread_mailbox', label: 'Code postal', value: postalCode|| '—' },
+                  { icon: 'public',       label: 'Pays',              value: country   || '—' },
+                ].map(({ icon, label, value }) => (
+                  <div key={label} className="flex items-center gap-3 py-3.5 border-b border-slate-50 last:border-0">
+                    <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-[15px]">{icon}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-1">{label}</p>
+                      <p className="text-sm font-semibold text-slate-800 truncate">{value}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

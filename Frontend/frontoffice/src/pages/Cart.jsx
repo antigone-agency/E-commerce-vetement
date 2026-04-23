@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import CustomSelect from '../components/ui/CustomSelect'
 import { toast } from 'react-toastify'
 import axios from 'axios'
 import { useCart } from '../context/CartContext'
@@ -44,6 +45,8 @@ export default function Cart() {
   const [tvaConfig, setTvaConfig] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [orderSuccess, setOrderSuccess] = useState(null)
+  const [birthdayEligible, setBirthdayEligible] = useState(false)
+  const [firstOrderEligible, setFirstOrderEligible] = useState(false)
 
   // Coupon state
   const [couponCode, setCouponCode] = useState('')
@@ -53,6 +56,16 @@ export default function Cart() {
 
   // Track which fields came pre-filled from user profile
   const [profileFields, setProfileFields] = useState({})
+
+  // Check if user is logged in
+  const isLoggedIn = useMemo(() => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user'))
+      return !!(user && user.email)
+    } catch { return false }
+  }, [])
+
+
 
   // Customer form
   const [form, setForm] = useState({
@@ -139,6 +152,23 @@ export default function Cart() {
     setSelectedZone(matched || null)
   }, [form.gouvernorat, shippingZones])
 
+  // Auto-apply "Première commande" coupon for first-time buyers
+  useEffect(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('user') || 'null')
+      if (!u?.id) return
+      if (localStorage.getItem(`_first_order_done_${u.id}`)) return
+      axios.get(`${API}/public/coupons/auto-trigger`, { params: { trigger: 'premiere_commande' } })
+        .then(res => {
+          if (res.data?.code) {
+            setAppliedCoupon({ code: res.data.code, type: res.data.type, valeur: res.data.valeur, label: 'Bienvenue' })
+          }
+        })
+        .catch(() => {})
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // ── Coupon validation ──
   const handleValidateCoupon = async () => {
     const code = couponCode.trim()
@@ -151,7 +181,7 @@ export default function Cart() {
       const params = { code }
       if (user?.id) params.userId = user.id
       const { data } = await axios.get(`${API}/public/coupons/validate`, { params })
-      setAppliedCoupon({ code: data.code, type: data.type, valeur: data.valeur })
+      setAppliedCoupon({ code: data.code, type: data.type, valeur: data.valeur, label: data.code })
       toast.success(`Coupon "${data.code}" appliqué !`)
     } catch (err) {
       const msg = err.response?.data?.message || err.response?.data || 'Coupon invalide'
@@ -234,6 +264,31 @@ export default function Cart() {
       setOrderSuccess(res.data)
       clearCart()
 
+      // ─── Post-order eligibility checks ───
+      try {
+        const u = JSON.parse(localStorage.getItem('user') || '{}')
+
+        // Birthday check: birthday within next 30 days AND account ≥2 months old at that date
+        if (u.dateOfBirth) {
+          const today = new Date()
+          const dob = new Date(u.dateOfBirth)
+          const birthdayThisYear = new Date(today.getFullYear(), dob.getMonth(), dob.getDate())
+          const daysUntil = Math.ceil((birthdayThisYear - today) / 86400000)
+          if (daysUntil >= 0 && daysUntil <= 30) {
+            const twoMonthsBefore = new Date(birthdayThisYear)
+            twoMonthsBefore.setMonth(twoMonthsBefore.getMonth() - 2)
+            const created = u.createdAt ? new Date(u.createdAt) : null
+            if (created && created <= twoMonthsBefore) setBirthdayEligible(true)
+          }
+        }
+
+        // First order check
+        if (u.id && !localStorage.getItem(`_first_order_done_${u.id}`)) {
+          setFirstOrderEligible(true)
+          localStorage.setItem(`_first_order_done_${u.id}`, '1')
+        }
+      } catch {}
+
       // Save customer info for next time
       try {
         const saved = JSON.parse(localStorage.getItem('user') || '{}')
@@ -307,6 +362,29 @@ export default function Cart() {
               Retour à la boutique
             </Link>
           </div>
+
+          {(birthdayEligible || firstOrderEligible) && (
+            <div className="space-y-3 w-full max-w-md mx-auto mt-4 text-left">
+              {birthdayEligible && (
+                <div className="flex items-center gap-3 p-4 bg-pink-50 border border-pink-200 rounded-xl">
+                  <span className="text-2xl">🎂</span>
+                  <div>
+                    <p className="font-bold text-pink-800 text-sm">Cadeau anniversaire activé !</p>
+                    <p className="text-pink-600 text-xs mt-0.5">Votre coupon exclusif vous a été envoyé par e-mail.</p>
+                  </div>
+                </div>
+              )}
+              {firstOrderEligible && (
+                <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl">
+                  <span className="text-2xl">🎁</span>
+                  <div>
+                    <p className="font-bold text-green-800 text-sm">Merci pour votre première commande !</p>
+                    <p className="text-green-600 text-xs mt-0.5">Un coupon de bienvenue vous attend par e-mail.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </main>
     )
@@ -354,9 +432,9 @@ export default function Cart() {
             <div className="space-y-5">
               {items.map((item) => (
                 <div key={item.key} className="flex gap-4 pb-5">
-                  <div className="w-24 h-32 bg-surface-container overflow-hidden shrink-0">
-                    {item.image ? (
-                      <img src={item.image} alt={item.nom} className="w-full h-full object-cover" />
+                  <div className="w-28 h-36 bg-surface-container overflow-hidden shrink-0">
+                    {(item.imageUrl || item.image) ? (
+                      <img src={item.imageUrl || item.image} alt={item.nom} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-neutral-300">
                         <span className="material-symbols-outlined text-3xl">image</span>
@@ -402,7 +480,9 @@ export default function Cart() {
             </div>
           </section>
 
-          {/* 02 / Informations Client */}
+          {/* 02-04 — only for logged-in users */}
+          {isLoggedIn && (
+          <>
           <section className="pt-4">
             <h2 className="font-headline text-[11px] font-bold tracking-[0.1em] uppercase mb-5 text-outline">
               02 / Informations Client
@@ -429,25 +509,25 @@ export default function Cart() {
               {/* Gouvernorat — dropdown */}
               <div>
                 <label className={labelCls}>Gouvernorat *</label>
-                <select className={inputCls + ' bg-transparent cursor-pointer'}
-                  value={form.gouvernorat} onChange={e => handleGouvernoratChange(e.target.value)}>
-                  <option value="">— Sélectionner —</option>
-                  {GOUVERNORATS_DATA.map(g => (
-                    <option key={g.gouvernorat} value={g.gouvernorat}>{g.gouvernorat}</option>
-                  ))}
-                </select>
+                <CustomSelect
+                  variant="underline"
+                  options={GOUVERNORATS_DATA.map(g => ({ value: g.gouvernorat, label: g.gouvernorat }))}
+                  value={form.gouvernorat}
+                  onChange={handleGouvernoratChange}
+                  placeholder="— Sélectionner —"
+                />
               </div>
               {/* Ville — dropdown dependent on gouvernorat */}
               <div>
                 <label className={labelCls}>Ville *</label>
-                <select className={inputCls + ' bg-transparent cursor-pointer'}
-                  value={form.city} onChange={e => handleVilleChange(e.target.value)}
-                  disabled={!form.gouvernorat}>
-                  <option value="">{form.gouvernorat ? '— Sélectionner —' : '— Choisir un gouvernorat d\'abord —'}</option>
-                  {villesForGouvernorat.map(v => (
-                    <option key={v.nom} value={v.nom}>{v.nom}</option>
-                  ))}
-                </select>
+                <CustomSelect
+                  variant="underline"
+                  options={villesForGouvernorat.map(v => ({ value: v.nom, label: v.nom }))}
+                  value={form.city}
+                  onChange={handleVilleChange}
+                  placeholder={form.gouvernorat ? '— Sélectionner —' : "— Choisir un gouvernorat d'abord —"}
+                  disabled={!form.gouvernorat}
+                />
               </div>
               {/* Code Postal — auto-filled but editable */}
               <div>
@@ -529,8 +609,28 @@ export default function Cart() {
               <p className="text-red-500 text-xs mt-2">{couponError}</p>
             )}
           </section>
+          </>
+          )} {/* end isLoggedIn 02-04 */}
 
-          {/* 05 / Mode de Paiement */}
+          {/* ── Login prompt — shown when not logged in ── */}
+          {!isLoggedIn && (
+            <div className="pt-6 pb-2 flex flex-col items-start gap-4 border-t border-outline-variant">
+              <div className="flex items-center gap-3">
+                <span className="material-symbols-outlined text-2xl text-neutral-400">lock</span>
+                <div>
+                  <p className="font-bold text-sm uppercase tracking-wide">Connexion requise</p>
+                  <p className="text-xs text-neutral-400 mt-0.5">Connectez-vous pour finaliser votre commande</p>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate('/login', { state: { from: '/panier' } })}
+                className="fo-btn px-8 py-4 text-[12px] font-bold uppercase tracking-widest w-full"
+              >
+                Se connecter pour commander
+              </button>
+            </div>
+          )}
+          {isLoggedIn && (
           <section className="pt-4">
             <h2 className="font-headline text-[11px] font-bold tracking-[0.1em] uppercase mb-5 text-outline">
               05 / Mode de Paiement
@@ -543,6 +643,7 @@ export default function Cart() {
               <span className="material-symbols-outlined text-neutral-400">local_shipping</span>
             </div>
           </section>
+          )} {/* end isLoggedIn 05 */}
         </div>
 
         {/* ═══ Right column — Summary ═══ */}
@@ -568,7 +669,7 @@ export default function Cart() {
               </div>
               {couponDiscount > 0 && (
                 <div className="flex justify-between text-green-600">
-                  <span>Coupon ({appliedCoupon.code})</span>
+                  <span>Coupon ({appliedCoupon.label || appliedCoupon.code})</span>
                   <span>-{fmt(couponDiscount)}</span>
                 </div>
               )}
@@ -583,13 +684,15 @@ export default function Cart() {
             </div>
 
             <button
-              onClick={handleSubmit}
-              disabled={submitting || items.length === 0}
+              onClick={isLoggedIn ? handleSubmit : () => navigate('/login', { state: { from: '/panier' } })}
+              disabled={isLoggedIn && (submitting || items.length === 0)}
               className={`w-full fo-btn py-5 text-[13px] font-bold uppercase tracking-widest transition-opacity ${
-                submitting ? 'opacity-50 cursor-wait' : ''
+                isLoggedIn && submitting ? 'opacity-50 cursor-wait' : ''
               }`}
             >
-              {submitting ? 'Traitement…' : 'Passer la commande'}
+              {isLoggedIn
+                ? (submitting ? 'Traitement…' : 'Passer la commande')
+                : 'Se connecter pour commander'}
             </button>
 
             <p className="text-[10px] text-neutral-400 text-center mt-4 leading-relaxed">

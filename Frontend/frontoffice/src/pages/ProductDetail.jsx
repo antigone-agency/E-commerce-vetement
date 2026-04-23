@@ -119,12 +119,15 @@ export default function ProductDetail() {
 
   /* ── Images for the selected colour (case-insensitive lookup) ── */
   const images = useMemo(() => {
+    const overlayIndex = product?.mixMatchEnabled ? (product.mixMatchImageIndex ?? 2) : -1
+    const filterOverlay = (arr) => arr.filter(Boolean).filter((_, i) => i !== overlayIndex)
+
     if (!selectedColor) return []
     const imgs = getImagesForColor(colorImagesMap, selectedColor.name)
-    if (Array.isArray(imgs) && imgs.length > 0) return imgs.filter(Boolean)
+    if (Array.isArray(imgs) && imgs.length > 0) return filterOverlay(imgs)
     // Fallback: try first available color
     for (const arr of Object.values(colorImagesMap)) {
-      if (Array.isArray(arr) && arr.length > 0) return arr.filter(Boolean)
+      if (Array.isArray(arr) && arr.length > 0) return filterOverlay(arr)
     }
     return product?.imageUrl ? [product.imageUrl] : []
   }, [selectedColor, colorImagesMap, product])
@@ -323,7 +326,7 @@ export default function ProductDetail() {
               disabled={!selectedSize}
               onClick={() => {
                 if (!selectedSize || !selectedColor || !product) return
-                addToCart(product, selectedColor.name, selectedSize, displayPrice, images[0] || '')
+                addToCart(product, selectedColor.name, selectedSize, displayPrice, product.imageUrl || images[0] || '')
                 toast.success(`${product.nom} ajouté au panier`)
               }}
               className={`w-full fo-btn py-6 text-[14px] font-bold uppercase tracking-widest transition-opacity ${

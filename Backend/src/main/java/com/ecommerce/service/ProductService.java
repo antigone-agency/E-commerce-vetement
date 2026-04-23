@@ -11,10 +11,12 @@ import com.ecommerce.repository.CollectionRepository;
 import com.ecommerce.repository.ProductRepository;
 import com.ecommerce.repository.ProductVariantRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.text.Normalizer;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,6 +50,64 @@ public class ProductService {
         Product product = productRepository.findBySlug(slug)
                 .orElseThrow(() -> new IllegalArgumentException("Produit introuvable: " + slug));
         return mapToResponse(product);
+    }
+
+    // ── Get public nouveautés (with gender filter + 30-day rule) ─────────────
+    @Transactional(readOnly = true)
+    public List<ProductResponse> getPublicProductsNouveautes(String gender) {
+        LocalDateTime now = LocalDateTime.now();
+
+        // 30-day rule: if no product was added to the site in the last 30 days, extend
+        // the badge duration to 30 days so the section is never empty
+        LocalDateTime mostRecent = productRepository
+                .findFirstByOrderByCreatedAtDesc()
+                .map(Product::getCreatedAt)
+                .orElse(now.minusDays(31));
+        boolean extendTo30 = mostRecent.isBefore(now.minusDays(30));
+
+        return productRepository.findPublicNouveautes().stream()
+                .filter(p -> {
+                    if (p.getNouveauteSince() == null)
+                        return true;
+                    int duree = extendTo30 ? 30
+                            : (p.getNouveauteDureeJours() != null ? p.getNouveauteDureeJours() : 7);
+                    return p.getNouveauteSince().plusDays(duree).isAfter(now);
+                })
+                .filter(p -> {
+                    if (gender == null || gender.isBlank())
+                        return true;
+                    String rootName = (p.getCategory() != null && p.getCategory().getParent() != null)
+                            ? p.getCategory().getParent().getNom()
+                            : (p.getCategory() != null ? p.getCategory().getNom() : "");
+                    return rootName != null && rootName.toLowerCase().contains(gender.toLowerCase());
+                })
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    // ── Scheduled: auto-expire badgeNouveau daily at midnight ─────────────
+    @Scheduled(cron = "0 0 0 * * *")
+    @Transactional
+    public void expireNouveauteBadges() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime mostRecent = productRepository
+                .findFirstByOrderByCreatedAtDesc()
+                .map(Product::getCreatedAt)
+                .orElse(now.minusDays(31));
+        boolean extendTo30 = mostRecent.isBefore(now.minusDays(30));
+        if (extendTo30)
+            return; // nothing to expire while the 30-day rule is active
+
+        productRepository.findPublicNouveautes().forEach(p -> {
+            if (p.getNouveauteSince() == null)
+                return;
+            int duree = p.getNouveauteDureeJours() != null ? p.getNouveauteDureeJours() : 7;
+            if (p.getNouveauteSince().plusDays(duree).isBefore(now)) {
+                p.setBadgeNouveau(false);
+                p.setNouveauteSince(null);
+                productRepository.save(p);
+            }
+        });
     }
 
     // ── Get public products ────────────────────────────────────────
@@ -140,6 +200,8 @@ public class ProductService {
                 .stock(request.getStock())
                 .statut(request.getStatut() != null ? request.getStatut() : "actif")
                 .badgeNouveau(request.isBadgeNouveau())
+                .nouveauteSince(request.isBadgeNouveau() ? LocalDateTime.now() : null)
+                .nouveauteDureeJours(request.isBadgeNouveau() ? request.getNouveauteDureeJours() : null)
                 .badgeBestSeller(request.isBadgeBestSeller())
                 .badgePromo(request.isBadgePromo())
                 .badgeExclusif(request.isBadgeExclusif())
@@ -158,6 +220,10 @@ public class ProductService {
                 .imageUrl(request.getImageUrl())
                 .colorImages(request.getColorImages())
                 .upsellTags(request.getUpsellTags())
+                .mixMatchEnabled(request.isMixMatchEnabled())
+                .mixMatchGender(defaultMixValue(request.getMixMatchGender()))
+                .mixMatchRole(defaultMixValue(request.getMixMatchRole()))
+                .mixMatchImageIndex(normalizeMixImageIndex(request.getMixMatchImageIndex()))
                 .build();
 
         if (request.getCategoryId() != null) {
@@ -204,7 +270,15 @@ public class ProductService {
         product.setStock(request.getStock());
         if (request.getStatut() != null)
             product.setStatut(request.getStatut());
+        // Handle nouveauteSince before updating the badge flag
+        boolean wasNouveau = product.isBadgeNouveau();
+        if (request.isBadgeNouveau() && !wasNouveau) {
+            product.setNouveauteSince(LocalDateTime.now());
+        } else if (!request.isBadgeNouveau()) {
+            product.setNouveauteSince(null);
+        }
         product.setBadgeNouveau(request.isBadgeNouveau());
+        product.setNouveauteDureeJours(request.isBadgeNouveau() ? request.getNouveauteDureeJours() : null);
         product.setBadgeBestSeller(request.isBadgeBestSeller());
         product.setBadgePromo(request.isBadgePromo());
         product.setBadgeExclusif(request.isBadgeExclusif());
@@ -223,6 +297,10 @@ public class ProductService {
         product.setImageUrl(request.getImageUrl());
         product.setColorImages(request.getColorImages());
         product.setUpsellTags(request.getUpsellTags());
+        product.setMixMatchEnabled(request.isMixMatchEnabled());
+        product.setMixMatchGender(defaultMixValue(request.getMixMatchGender()));
+        product.setMixMatchRole(defaultMixValue(request.getMixMatchRole()));
+        product.setMixMatchImageIndex(normalizeMixImageIndex(request.getMixMatchImageIndex()));
 
         if (request.getCategoryId() != null) {
             Category category = categoryRepository.findById(request.getCategoryId())
@@ -309,6 +387,18 @@ public class ProductService {
         return Math.round(((salePrice - costPrice) / salePrice) * 100.0);
     }
 
+    private String defaultMixValue(String value) {
+        return (value == null || value.isBlank()) ? "auto" : value.trim().toLowerCase();
+    }
+
+    private int normalizeMixImageIndex(int value) {
+        if (value < 0)
+            return 0;
+        if (value > 2)
+            return 2;
+        return value;
+    }
+
     private List<ProductVariant> buildVariants(
             List<ProductRequest.ProductVariantRequest> requests, Product product) {
         List<ProductVariant> result = new ArrayList<>();
@@ -346,8 +436,12 @@ public class ProductService {
                 .sku(p.getSku())
                 .description(p.getDescription())
                 .categoryId(p.getCategory() != null ? p.getCategory().getId() : null)
+                .categorySlug(p.getCategory() != null ? p.getCategory().getSlug() : null)
                 .parentCategoryId(p.getCategory() != null && p.getCategory().getParent() != null
                         ? p.getCategory().getParent().getId()
+                        : null)
+                .parentCategorySlug(p.getCategory() != null && p.getCategory().getParent() != null
+                        ? p.getCategory().getParent().getSlug()
                         : null)
                 .parentCategoryNom(p.getCategory() != null && p.getCategory().getParent() != null
                         ? p.getCategory().getParent().getNom()
@@ -366,6 +460,8 @@ public class ProductService {
                 .stockStatus(computeStockStatus(p.getStock()))
                 .statut(p.getStatut())
                 .badgeNouveau(p.isBadgeNouveau())
+                .nouveauteSince(p.getNouveauteSince())
+                .nouveauteDureeJours(p.getNouveauteDureeJours())
                 .badgeBestSeller(p.isBadgeBestSeller())
                 .badgePromo(p.isBadgePromo())
                 .badgeExclusif(p.isBadgeExclusif())
@@ -384,6 +480,10 @@ public class ProductService {
                 .imageUrl(p.getImageUrl())
                 .colorImages(p.getColorImages())
                 .upsellTags(p.getUpsellTags())
+                .mixMatchEnabled(p.isMixMatchEnabled())
+                .mixMatchGender(defaultMixValue(p.getMixMatchGender()))
+                .mixMatchRole(defaultMixValue(p.getMixMatchRole()))
+                .mixMatchImageIndex(normalizeMixImageIndex(p.getMixMatchImageIndex()))
                 .variants(variantResponses)
                 .createdAt(p.getCreatedAt())
                 .updatedAt(p.getUpdatedAt())

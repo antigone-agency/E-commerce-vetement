@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import CustomSelect from '../components/ui/CustomSelect'
 import { useNavigate } from 'react-router-dom'
 import apiClient from '../api/apiClient'
 
@@ -259,6 +260,7 @@ export default function Profile() {
     localStorage.removeItem('accessToken')
     localStorage.removeItem('refreshToken')
     localStorage.removeItem('user')
+    window.dispatchEvent(new Event('userChanged'))
     navigate('/login')
   }
 
@@ -598,22 +600,25 @@ export default function Profile() {
                     </div>
                     <div>
                       <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1 block">Gouvernorat</label>
-                      <select className={inputCls + ' cursor-pointer'} value={address.gouvernorat} onChange={e => handleGouvernoratChange(e.target.value)}>
-                        <option value="">— Sélectionner —</option>
-                        {GOUVERNORATS_DATA.map(g => (
-                          <option key={g.gouvernorat} value={g.gouvernorat}>{g.gouvernorat}</option>
-                        ))}
-                      </select>
+                      <CustomSelect
+                        variant="box"
+                        options={GOUVERNORATS_DATA.map(g => ({ value: g.gouvernorat, label: g.gouvernorat }))}
+                        value={address.gouvernorat}
+                        onChange={handleGouvernoratChange}
+                        placeholder="— Sélectionner —"
+                      />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1 block">Ville</label>
-                        <select className={inputCls + ' cursor-pointer'} value={address.city} onChange={e => handleVilleChange(e.target.value)} disabled={!address.gouvernorat}>
-                          <option value="">{address.gouvernorat ? '— Sélectionner —' : "— Choisir un gouvernorat d'abord —"}</option>
-                          {villesForGouvernorat.map(v => (
-                            <option key={v.nom} value={v.nom}>{v.nom}</option>
-                          ))}
-                        </select>
+                        <CustomSelect
+                          variant="box"
+                          options={villesForGouvernorat.map(v => ({ value: v.nom, label: v.nom }))}
+                          value={address.city}
+                          onChange={handleVilleChange}
+                          placeholder={address.gouvernorat ? '— Sélectionner —' : "— Choisir un gouvernorat d'abord —"}
+                          disabled={!address.gouvernorat}
+                        />
                       </div>
                       <div>
                         <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1 block">Code Postal</label>
@@ -682,19 +687,20 @@ export default function Profile() {
                 <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-2 block">
                   Raison du retour *
                 </label>
-                <select
+                <CustomSelect
+                  variant="box"
+                  options={[
+                    { value: 'Taille incorrecte', label: 'Taille incorrecte' },
+                    { value: 'Produit défectueux', label: 'Produit défectueux' },
+                    { value: 'Non conforme à la description', label: 'Non conforme à la description' },
+                    { value: 'Produit endommagé à la réception', label: 'Produit endommagé à la réception' },
+                    { value: 'Erreur de commande', label: 'Erreur de commande' },
+                    { value: 'Autre', label: 'Autre' },
+                  ]}
                   value={returnRaison}
-                  onChange={e => setReturnRaison(e.target.value)}
-                  className="w-full px-4 py-3 border border-neutral-200 bg-neutral-50 text-sm focus:ring-1 focus:ring-black focus:border-black outline-none transition-all cursor-pointer"
-                >
-                  <option value="">— Sélectionner une raison —</option>
-                  <option value="Taille incorrecte">Taille incorrecte</option>
-                  <option value="Produit défectueux">Produit défectueux</option>
-                  <option value="Non conforme à la description">Non conforme à la description</option>
-                  <option value="Produit endommagé à la réception">Produit endommagé à la réception</option>
-                  <option value="Erreur de commande">Erreur de commande</option>
-                  <option value="Autre">Autre</option>
-                </select>
+                  onChange={setReturnRaison}
+                  placeholder="— Sélectionner une raison —"
+                />
               </div>
 
               {/* Commentaire */}

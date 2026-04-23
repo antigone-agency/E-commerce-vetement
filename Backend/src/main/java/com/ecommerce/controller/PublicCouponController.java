@@ -23,4 +23,16 @@ public class PublicCouponController {
             @RequestParam(required = false) Long userId) {
         return ResponseEntity.ok(couponService.validateCoupon(code, userId));
     }
+
+    /**
+     * Returns the currently active auto-trigger coupon for a given trigger name.
+     * Used by the frontoffice to auto-apply hesitation/anniversary/first-order
+     * coupons.
+     */
+    @GetMapping("/auto-trigger")
+    public ResponseEntity<CouponResponse> getAutoTriggerCoupon(@RequestParam String trigger) {
+        return couponService.getActiveAutoTriggerCoupon(trigger)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 }

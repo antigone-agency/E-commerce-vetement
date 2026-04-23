@@ -38,4 +38,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     long countNonArchived();
 
     List<Product> findByNomIn(List<String> noms);
+
+    @Query("SELECT p FROM Product p WHERE p.statut = 'actif' AND p.visibleSite = true AND p.badgeNouveau = true ORDER BY p.nouveauteSince DESC")
+    List<Product> findPublicNouveautes();
+
+    Optional<Product> findFirstByOrderByCreatedAtDesc();
 }

@@ -38,6 +38,14 @@ const PRICE_RANGES = [
   { label: '300+ DT', min: 300, max: Infinity },
 ]
 
+function stripSlug(value) {
+  return value ? value.replace(/^\//, '') : ''
+}
+
+function toRouteKey(value) {
+  return stripSlug(value).replace(/\//g, '-')
+}
+
 export default function Products() {
   const navigate = useNavigate()
   const { categorySlug, subCategorySlug, collectionSlug } = useParams()
@@ -75,21 +83,31 @@ export default function Products() {
     let parent = null
     let sub = null
 
-    const stripSlash = (s) => s ? s.replace(/^\//, '') : ''
     if (categorySlug) {
-      parent = categories.find(c => stripSlash(c.slug) === categorySlug) || null
+      parent = categories.find(c => stripSlug(c.slug) === categorySlug) || null
       if (parent && subCategorySlug) {
-        sub = (parent.children || []).find(c => stripSlash(c.slug) === subCategorySlug) || null
+        sub = (parent.children || []).find(c => stripSlug(c.slug) === subCategorySlug) || null
       }
     }
 
     const title = sub ? sub.nom : parent ? parent.nom : 'Tous les produits'
     const bc = []
-    if (parent) bc.push({ label: parent.nom, slug: stripSlash(parent.slug) })
-    if (sub) bc.push({ label: sub.nom, slug: `${stripSlash(parent.slug)}/${stripSlash(sub.slug)}` })
+    if (parent) bc.push({ label: parent.nom, slug: stripSlug(parent.slug) })
+    if (sub) bc.push({ label: sub.nom, slug: `${stripSlug(parent.slug)}/${stripSlug(sub.slug)}` })
 
     return { parentCat: parent, subCat: sub, pageTitle: title, breadcrumb: bc }
   }, [categories, categorySlug, subCategorySlug, collectionSlug, collectionInfo])
+
+  const mixMatchRootSlug = useMemo(() => {
+    if (collectionSlug) return null
+    if (parentCat) return stripSlug(parentCat.slug)
+    return categorySlug || null
+  }, [categorySlug, collectionSlug, parentCat])
+
+  const showMixMatchCta = useMemo(() => {
+    if (!mixMatchRootSlug) return false
+    return /(homme|femme)/i.test(mixMatchRootSlug)
+  }, [mixMatchRootSlug])
 
   /* ── Fetch products based on route ── */
   useEffect(() => {
@@ -204,6 +222,15 @@ export default function Products() {
           <p className="text-neutral-400 text-sm mt-2">
             {filteredProducts.length} produit{filteredProducts.length !== 1 ? 's' : ''}
           </p>
+          {showMixMatchCta && (
+            <button
+              onClick={() => navigate(subCat ? `/mix-and-match/${mixMatchRootSlug}/${toRouteKey(subCat.slug || subCat.nom)}` : `/mix-and-match/${mixMatchRootSlug}`)}
+              className="mt-6 inline-flex items-center gap-2 rounded-full border border-black px-5 py-3 font-label text-[11px] uppercase tracking-[0.16em] text-black transition hover:bg-black hover:text-white"
+            >
+              <span className="material-symbols-outlined text-base">checkroom</span>
+              Composer le look
+            </button>
+          )}
         </div>
         <div className="flex gap-4 items-center">
           <span className="font-label text-[11px] uppercase tracking-[0.05em] text-neutral-400">Trier par:</span>

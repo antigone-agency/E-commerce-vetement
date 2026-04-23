@@ -20,6 +20,7 @@ export default function LoginForm({ onSwitch }) {
       localStorage.setItem('accessToken', data.accessToken)
       localStorage.setItem('refreshToken', data.refreshToken)
       localStorage.setItem('user', JSON.stringify(data.user))
+      window.dispatchEvent(new Event('userChanged'))
       scheduleAutoLogout()
 
       const redirect = params.get('redirect')
