@@ -167,7 +167,8 @@ export default function Clients() {
         res = await apiClient.get('/admin/users', { params })
       }
 
-      setClients(res.data.content)
+      const filtered = res.data.content.filter(u => u.roleName !== 'SUPER_ADMIN' && u.roleName !== 'ADMIN')
+      setClients(filtered)
       setTotalElements(res.data.totalElements)
       setTotalPages(res.data.totalPages)
     } catch (err) {

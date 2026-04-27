@@ -1,7 +1,9 @@
 import { useFoAppearance } from '../../context/AppearanceContext'
 
 export default function Footer() {
-  const { brandName, slogan, instagram, facebook, linkedin, whatsapp, phone, email } = useFoAppearance()
+  const { brandName, slogan, logoMain, instagram, facebook, phone, email } = useFoAppearance()
+
+  const displayLogo = logoMain || '/antigone-logo.svg'
 
   const socialLinks = [
     { label: 'Instagram', href: instagram },
@@ -12,12 +14,7 @@ export default function Footer() {
     <footer className="w-full px-6 md:px-12 py-20 bg-neutral-50 grid grid-cols-1 md:grid-cols-4 gap-10">
       {/* Brand */}
       <div className="md:col-span-1">
-        <span className="text-lg font-bold text-black uppercase mb-3 block">
-          {brandName || 'GMIR'}
-        </span>
-        {slogan && (
-          <span className="text-[10px] tracking-[0.2em] uppercase text-neutral-500 mb-4 block">{slogan}</span>
-        )}
+        <img src={displayLogo} alt={brandName || 'antigoneagency'} className="h-8 w-auto object-contain mb-3" />
         {(phone || email) && (
           <div className="flex flex-col gap-1 mt-3">
             {phone && <a href={`tel:${phone}`} className="font-label tracking-[0.05em] text-[11px] uppercase text-neutral-600 hover:text-black">{phone}</a>}

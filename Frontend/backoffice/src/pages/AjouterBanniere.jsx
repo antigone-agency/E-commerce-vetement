@@ -22,11 +22,7 @@ const Toggle = ({ checked, onChange, label, desc }) => (
   </div>
 )
 
-const prioriteOptions = [
-  { value: 1, label: '1 — Haute' },
-  { value: 2, label: '2 — Moyenne' },
-  { value: 3, label: '3 — Faible' },
-]
+const prioriteOptions = [] // remplacé par options dynamiques dans le composant
 
 const ctaTypeOptions = [
   { value: 'produit', label: 'Produit' },
@@ -123,7 +119,24 @@ export default function AjouterBanniere() {
   const [saving, setSaving] = useState(false)
   const [loadingData, setLoadingData] = useState(isEditing)
 
-  // ─ Load existing banner for edit mode
+  // ─ Load existing banner for edit mode + fetch total banner count for dynamic priority
+  const [bannerCount, setBannerCount] = useState(0)
+
+  useEffect(() => {
+    bannerApi.getAll().then((list) => {
+      const count = Array.isArray(list) ? list.length : 0
+      setBannerCount(count)
+      // Default priority for new banner = last position
+      if (!isEditing) setPriorite(count + 1)
+    }).catch(() => {})
+  }, [isEditing])
+
+  // Dynamic priority options: 1..N+1 for new, 1..N for edit
+  const dynamicPrioriteOptions = Array.from(
+    { length: isEditing ? Math.max(bannerCount, 1) : bannerCount + 1 },
+    (_, i) => ({ value: i + 1, label: `${i + 1}${i === 0 ? ' — 1ᵉʳ (en tête)' : i === bannerCount ? ' — Dernier' : ''}` })
+  )
+
   useEffect(() => {
     if (!isEditing) return
     const load = async () => {
@@ -310,7 +323,25 @@ export default function AjouterBanniere() {
               {/* Video optionnel */}
               <div>
                 <Label>Vidéo (optionnel)</Label>
-                <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://youtube.com/embed/... ou URL vidéo" />
+                <Input
+                  value={videoUrl}
+                  onChange={(e) => {
+                    const raw = e.target.value.trim()
+                    // Convertit automatiquement youtube.com/watch?v=ID → youtube.com/embed/ID
+                    const ytMatch = raw.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+                    if (ytMatch) {
+                      setVideoUrl(`https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=1&loop=1&playlist=${ytMatch[1]}&controls=0`)
+                    } else {
+                      setVideoUrl(raw)
+                    }
+                  }}
+                  placeholder="https://www.youtube.com/watch?v=... (converti automatiquement)"
+                />
+                {videoUrl && (
+                  <div className="mt-3 rounded-lg overflow-hidden border border-slate-200 aspect-video">
+                    <iframe src={videoUrl} className="w-full h-full" allow="autoplay; encrypted-media" allowFullScreen title="Aperçu vidéo" />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -375,8 +406,10 @@ export default function AjouterBanniere() {
               </div>
               <div>
                 <Label>Priorité d'affichage</Label>
-                <CustomSelect value={priorite} onChange={setPriorite} options={prioriteOptions} />
-                <p className="text-[10px] text-slate-400 mt-2">Définit l'ordre d'apparition dans le slideshow (1 = affiché en premier)</p>
+                <CustomSelect value={priorite} onChange={setPriorite} options={dynamicPrioriteOptions} />
+                <p className="text-[10px] text-slate-400 mt-2">
+                  {bannerCount === 0 ? 'Première bannière — sera affichée en tête' : `${isEditing ? bannerCount : bannerCount + 1} position(s) disponible(s) — 1 = affiché en premier`}
+                </p>
               </div>
             </div>
           </div>
@@ -485,7 +518,7 @@ export default function AjouterBanniere() {
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Résumé</p>
             <div className="space-y-2">
               {[
-                { label: 'Priorité', val: prioriteOptions.find((o) => o.value === priorite)?.label },
+                { label: 'Priorité', val: `Position ${priorite}` },
                 { label: 'Audience', val: audienceOptions.find((o) => o.value === audience)?.label },
                 { label: 'Statut', val: statutOptions.find((o) => o.value === statut)?.label },
                 { label: 'A/B Test', val: abTestEnabled ? 'Activé' : 'Désactivé' },
@@ -498,73 +531,6 @@ export default function AjouterBanniere() {
             </div>
           </div>
 
-          {/* 7. A/B Test */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-violet-600">science</span>
-                <h3 className="text-sm font-bold text-slate-700">Test A/B</h3>
-                <span className="px-2 py-0.5 bg-violet-50 text-violet-600 text-[9px] font-bold rounded-full border border-violet-100 uppercase">Pro</span>
-              </div>
-              <button type="button" onClick={() => setAbTestEnabled(!abTestEnabled)} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${abTestEnabled ? 'bg-violet-600' : 'bg-slate-200'}`}>
-                <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${abTestEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
-              </button>
-            </div>
-            {abTestEnabled && (
-              <div className="p-6 space-y-5">
-                <div className="bg-violet-50/50 rounded-lg border border-violet-100 p-4">
-                  <p className="text-xs text-violet-700">Le système affichera aléatoirement la <span className="font-bold">Bannière A</span> (principale) ou la <span className="font-bold">Bannière B</span> ci-dessous, et choisira automatiquement la meilleure.</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {/* Variant A */}
-                  <div className="bg-brand/5 rounded-lg border border-brand/10 p-4">
-                    <p className="text-[10px] font-bold text-brand uppercase tracking-wider mb-3 flex items-center gap-1">
-                      <span className="w-5 h-5 bg-brand text-white rounded flex items-center justify-center text-[10px] font-bold">A</span>
-                      Bannière A (Principale)
-                    </p>
-                    <p className="text-sm text-slate-600">Utilise le titre, sous-titre et CTA principaux configurés ci-dessus.</p>
-                  </div>
-                  {/* Variant B */}
-                  <div className="bg-violet-50/50 rounded-lg border border-violet-100 p-4 space-y-3">
-                    <p className="text-[10px] font-bold text-violet-600 uppercase tracking-wider flex items-center gap-1">
-                      <span className="w-5 h-5 bg-violet-600 text-white rounded flex items-center justify-center text-[10px] font-bold">B</span>
-                      Bannière B (Variante)
-                    </p>
-                    <div>
-                      <Label>Titre B</Label>
-                      <Input value={abTitreB} onChange={(e) => setAbTitreB(e.target.value)} placeholder="Titre alternatif" />
-                    </div>
-                    <div>
-                      <Label>Sous-titre B</Label>
-                      <Input value={abSousTitreB} onChange={(e) => setAbSousTitreB(e.target.value)} placeholder="Sous-titre alternatif" />
-                    </div>
-                    <div>
-                      <Label>CTA B</Label>
-                      <Input value={abCtaTexteB} onChange={(e) => setAbCtaTexteB(e.target.value)} placeholder="Ex: Voir maintenant" />
-                    </div>
-                    <div>
-                      <Label>Image B (optionnel)</Label>
-                      {abImageB ? (
-                        <div className="bg-white rounded-lg border border-slate-200 p-3 flex items-center gap-3">
-                          <span className="material-symbols-outlined text-violet-500">image</span>
-                          <span className="text-sm text-slate-700 truncate flex-1">{abImageB}</span>
-                          <button type="button" onClick={() => setAbImageB('')} className="text-red-400 hover:text-red-500">
-                            <span className="material-symbols-outlined text-sm">close</span>
-                          </button>
-                        </div>
-                      ) : (
-                        <label className="block border-2 border-dashed border-violet-200 rounded-lg p-4 text-center cursor-pointer hover:border-violet-400 hover:bg-violet-50 transition-colors">
-                          <span className="material-symbols-outlined text-xl text-violet-300 mb-1 block">cloud_upload</span>
-                          <p className="text-[10px] font-bold text-violet-500">Image variante B</p>
-                          <input type="file" className="hidden" accept="image/*" onChange={(e) => { if (e.target.files?.[0]) setAbImageB(e.target.files[0].name) }} />
-                        </label>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
 
         {/* ───── RIGHT COLUMN (1/3) ───── */}

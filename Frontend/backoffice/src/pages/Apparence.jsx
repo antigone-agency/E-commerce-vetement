@@ -710,7 +710,7 @@ export default function Apparence() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-1">
                       <Label>Nom de la marque</Label>
-                      <Input value={current.brandName || ''} onChange={set('brandName')} />
+                      <Input value={current.brandName || ''} onChange={set('brandName')} placeholder="antigoneagency" />
                     </div>
                     <div className="space-y-1">
                       <Label>Domaine</Label>
@@ -934,14 +934,16 @@ export default function Apparence() {
                           </div>
                         </div>
 
-                        {/* Brand info */}
-                        {(current.brandName || current.slogan) && (
-                          <div className="bg-white border border-slate-100 rounded-lg px-4 py-3 space-y-1">
-                            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-2">Identité</p>
-                            {current.brandName && <p className="text-sm font-black tracking-widest uppercase" style={{ color: '#005b3d' }}>{current.brandName}</p>}
-                            {current.slogan && <p className="text-[10px] tracking-[0.25em] uppercase text-slate-400">{current.slogan}</p>}
-                          </div>
-                        )}
+                        {/* Agency identity — always shown, hardcoded */}
+                        <div className="bg-white border border-slate-100 rounded-lg px-4 py-3 space-y-2">
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-2">Créé par</p>
+                          <img
+                            src="/antigone-logo.svg"
+                            alt="Antigone Agency"
+                            className="h-7 w-auto object-contain"
+                          />
+                          <p className="text-[8px] tracking-[0.2em] uppercase text-slate-300">antigoneagency.com</p>
+                        </div>
                       </div>
                     ) : (
                       /* ── BO: default component preview ── */

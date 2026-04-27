@@ -1265,7 +1265,8 @@ function EditProduit() {
                 </span>
               </div>
               <div className="p-4">
-                <div className="rounded-lg border border-slate-200 overflow-hidden">
+                {/* Fake browser bar */}
+                <div className="rounded-lg border border-slate-200 overflow-hidden mb-3">
                   <div className="flex items-center gap-2 px-3 py-2 bg-slate-100 border-b border-slate-200">
                     <div className="flex gap-1">
                       <div className="w-2 h-2 rounded-full bg-red-400" />
@@ -1276,68 +1277,100 @@ function EditProduit() {
                       <span className="text-[9px] text-slate-400">localhost:3001/produits</span>
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 p-3">
-                    {[0,1,2,3,4,5].map((i) => i === 1 ? (
-                      <div key={i} className="ring-2 ring-brand rounded-sm">
-                        <div className="relative aspect-[3/4] bg-slate-100 overflow-hidden">
-                          {activeBadge && (
-                            <div className="absolute top-1 left-1 bg-black text-white text-[5px] font-bold uppercase tracking-widest px-1 py-0.5 leading-none">
-                              {activeBadge}
+                  {/* Product grid — 3 cards, centre = le vrai produit */}
+                  <div className="grid grid-cols-3 gap-3 p-3 bg-white">
+                    {/* Fake left card */}
+                    <div className="opacity-30">
+                      <div className="aspect-[3/4] bg-slate-200" />
+                      <div className="h-2 bg-slate-300 rounded mt-2 w-3/4" />
+                      <div className="h-1.5 bg-slate-200 rounded mt-1 w-1/2" />
+                    </div>
+
+                    {/* Real product card — exact replica of frontoffice */}
+                    {(() => {
+                      // Resolve main image (first image of first color)
+                      let previewImg = null
+                      const colorKeys = Object.keys(colorImages)
+                      if (colorKeys.length > 0) {
+                        const firstArr = colorImages[colorKeys[0]]
+                        previewImg = Array.isArray(firstArr) ? firstArr.find(Boolean) || null : null
+                      }
+                      // Swatches from variants (unique colorSwatch values)
+                      const swatchColors = [...new Set(variants.map(v => resolveColor(v.colorSwatch)).filter(Boolean))].slice(0, 5)
+                      // Price display
+                      const displayPrice = hasPromo && promoPrice
+                        ? parseFloat(promoPrice).toLocaleString('fr-FR', { minimumFractionDigits: 2 })
+                        : salePrice
+                        ? parseFloat(salePrice).toLocaleString('fr-FR', { minimumFractionDigits: 2 })
+                        : null
+                      const discountPct = hasPromo && salePrice && promoPrice
+                        ? Math.round(((parseFloat(salePrice) - parseFloat(promoPrice)) / parseFloat(salePrice)) * 100)
+                        : null
+
+                      return (
+                        <div className="ring-2 ring-brand/50">
+                          {/* Image */}
+                          <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100">
+                            {previewImg ? (
+                              <img src={previewImg} alt={name || 'produit'} className="absolute inset-0 w-full h-full object-cover" />
+                            ) : (
+                              <div className="absolute inset-0 flex items-center justify-center text-neutral-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                            )}
+                            {activeBadge && (
+                              <span className="absolute top-1.5 left-1.5 bg-black text-white text-[6px] font-bold px-1.5 py-0.5 tracking-wider">
+                                {activeBadge}
+                              </span>
+                            )}
+                            {discountPct && (
+                              <span className="absolute top-1.5 right-1.5 bg-red-600 text-white text-[6px] font-bold px-1.5 py-0.5 tracking-wider">
+                                -{discountPct}%
+                              </span>
+                            )}
+                          </div>
+                          {/* Info */}
+                          <div className="pt-2 space-y-0.5">
+                            <div className="flex justify-between items-start gap-1">
+                              <p className="text-[8px] font-bold uppercase tracking-tight leading-tight line-clamp-1 flex-1">
+                                {name || <span className="text-slate-300 font-normal italic">Nom du produit</span>}
+                              </p>
+                              <div className="text-right">
+                                {displayPrice && (
+                                  <span className="text-[8px] font-bold tracking-tight">{displayPrice} DT</span>
+                                )}
+                                {hasPromo && salePrice && (
+                                  <span className="block text-[6px] text-neutral-400 line-through">
+                                    {parseFloat(salePrice).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DT
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                          )}
-                          {hasPromo && salePrice && promoPrice && (
-                            <div className="absolute top-1 right-1 bg-badge text-white text-[5px] font-bold uppercase px-1 py-0.5 rounded leading-none">
-                              -{Math.round(((parseFloat(salePrice) - parseFloat(promoPrice)) / parseFloat(salePrice)) * 100)}%
-                            </div>
-                          )}
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="material-symbols-outlined text-slate-300 text-xl">image</span>
+                            {swatchColors.length > 0 && (
+                              <div className="flex gap-1 mt-1">
+                                {swatchColors.map((c, i) => (
+                                  <div key={i} className="w-2 h-2" style={{ backgroundColor: c, border: c === '#ffffff' ? '1px solid #c6c6c6' : 'none' }} />
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <div className="p-1">
-                          <p className="text-[7px] font-bold uppercase tracking-tight leading-tight line-clamp-1">
-                            {name || <span className="text-slate-300 font-normal">Nom…</span>}
-                          </p>
-                          <p className="text-[7px] text-slate-600 mt-0.5">
-                            {hasPromo && promoPrice
-                              ? `${parseFloat(promoPrice).toFixed(2)} DT`
-                              : salePrice
-                              ? `${parseFloat(salePrice).toFixed(2)} DT`
-                              : '—'}
-                          </p>
-                          <div className="flex gap-0.5 mt-0.5">
-                            {variants.slice(0, 3).map((v) => (
-                              <div key={v.id} className="w-2 h-2 border border-slate-200" style={{ backgroundColor: resolveColor(v.colorSwatch) }} />
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div key={i} className="opacity-40">
-                        <div className="aspect-[3/4] bg-slate-200 rounded-sm" />
-                        <div className="h-1 bg-slate-300 rounded mt-1 w-3/4" />
-                        <div className="h-1 bg-slate-200 rounded mt-0.5 w-1/2" />
-                      </div>
-                    ))}
+                      )
+                    })()}
+
+                    {/* Fake right card */}
+                    <div className="opacity-30">
+                      <div className="aspect-[3/4] bg-slate-200" />
+                      <div className="h-2 bg-slate-300 rounded mt-2 w-3/4" />
+                      <div className="h-1.5 bg-slate-200 rounded mt-1 w-1/2" />
+                    </div>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-1.5 mt-3">
-                  {badges.nouveau && (
-                    <span className="text-[9px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">Nouveauté</span>
-                  )}
-                  {badges.bestSeller && (
-                    <span className="text-[9px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full">Best-Seller</span>
-                  )}
-                  {hasPromo && (
-                    <span className="text-[9px] bg-badge/10 text-badge font-bold px-2 py-0.5 rounded-full">Promo active</span>
-                  )}
-                  {!visibility.site && (
-                    <span className="text-[9px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-full">Masqué</span>
-                  )}
-                </div>
-                <p className="text-[10px] text-slate-400 text-center mt-3 flex items-center justify-center gap-1">
+                <p className="text-[10px] text-slate-400 text-center flex items-center justify-center gap-1">
                   <span className="material-symbols-outlined text-[12px]">info</span>
-                  Aperçu en temps réel
+                  Aperçu en temps réel — tel que vu sur le site
                 </p>
               </div>
             </div>

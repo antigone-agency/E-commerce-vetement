@@ -87,23 +87,12 @@ function Sidebar() {
       {/* Logo */}
       {showLogo && (
       <div className={`px-[10px] py-[5px] flex items-center ${logoAlign === 'center' ? 'justify-center' : ''}`}>
-        {logoSrc ? (
-          <img
-            src={logoSrc}
-            alt="Logo"
-            className="w-auto object-contain transition-all duration-200"
-            style={{ height: `${36 * logoScale / 100}px`, maxWidth: '200px' }}
-          />
-        ) : (
-          <>
-            <div className="w-9 h-9 bg-sidebar rounded-custom flex items-center justify-center shadow-sm flex-shrink-0">
-              <span className="material-symbols-outlined text-white text-[18px]">shield</span>
-            </div>
-            <span className="ml-3 text-lg font-bold tracking-tight text-slate-800">
-              WORKWEAR<span className="text-sidebar">PRO</span>
-            </span>
-          </>
-        )}
+        <img
+          src={logoSrc || '/antigone-logo.webp'}
+          alt={logoSrc ? 'Logo' : 'Antigone Agency'}
+          className="w-auto object-contain transition-all duration-200"
+          style={{ height: `${36 * logoScale / 100}px`, maxWidth: '200px' }}
+        />
       </div>
       )}
 

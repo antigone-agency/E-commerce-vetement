@@ -212,20 +212,16 @@ export default function Header() {
         <div className="flex-1 flex justify-center">
           <Link to="/" className="flex flex-col items-center gap-0.5">
             {(() => {
-              const solidLogo = logoNavbar || logoMain
+              const solidLogo = logoNavbar || logoMain || '/antigone-logo.svg'
               const transparentLogo = logoLight || solidLogo
               const activeLogo = isTransparent ? transparentLogo : solidLogo
-              return activeLogo ? (
+              return (
                 <img
                   src={activeLogo}
-                  alt={brandName}
+                  alt={brandName || 'antigoneagency'}
                   className="h-8 w-auto object-contain transition-all duration-500"
+                  style={isTransparent ? { filter: 'brightness(0) invert(1)' } : {}}
                 />
-              ) : (
-                <>
-                  <span className={`text-2xl font-black tracking-[0.15em] uppercase transition-colors duration-500 ${isTransparent ? 'text-white' : 'text-brand'}`}>{brandName || 'GMIR'}</span>
-                  <span className={`text-[9px] font-medium tracking-[0.35em] uppercase transition-colors duration-500 ${isTransparent ? 'text-white/80' : 'text-brand'}`}>{slogan || 'JEWELRY'}</span>
-                </>
               )
             })()}
           </Link>

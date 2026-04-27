@@ -868,28 +868,6 @@ export default function AjouterCollection() {
             </div>
           </div>
 
-          {/* ── SEO ────────────────────────────────────────────────── */}
-          <div className="bg-white rounded-custom border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
-              <span className="material-symbols-outlined text-brand text-lg">search</span>
-              <h2 className="text-sm font-bold text-slate-700">SEO</h2>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <Label>Meta Title</Label>
-                <Input value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} placeholder="Titre SEO" />
-                <p className="text-[10px] text-slate-400 mt-1">{metaTitle.length}/60 caractères</p>
-              </div>
-              <div>
-                <Label>Meta Description</Label>
-                <textarea value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} rows={3}
-                  placeholder="Description pour les moteurs de recherche..."
-                  className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand focus:border-brand transition-all placeholder:text-slate-400 outline-none resize-none" />
-                <p className="text-[10px] text-slate-400 mt-1">{metaDescription.length}/160 caractères</p>
-              </div>
-            </div>
-          </div>
-
         </div>
 
         {/* ── Right Column (1/3) — Sticky Aperçu ───────────────────── */}
@@ -1027,26 +1005,7 @@ export default function AjouterCollection() {
             </div>
           </div>
 
-          {/* ── SEO Preview ────────────────────────────────────────── */}
-          <div className="bg-white rounded-custom border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
-              <span className="material-symbols-outlined text-brand text-lg">search</span>
-              <h2 className="text-sm font-bold text-slate-700">Aperçu Google</h2>
-            </div>
-            <div className="p-4">
-              <div className="rounded-lg border border-slate-200 p-4 bg-white">
-                <p className="text-[13px] text-blue-700 font-medium truncate">
-                  {metaTitle || 'Titre de la collection — GMIR JEWELRY'}
-                </p>
-                <p className="text-[11px] text-brand truncate mt-0.5">
-                  www.gmir-jewelry.com/collections/{slug || 'slug'}
-                </p>
-                <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">
-                  {metaDescription || 'Découvrez notre collection exclusive. Pièces uniques et raffinées.'}
-                </p>
-              </div>
-            </div>
-          </div>
+
         </div>
       </form>
     </div>

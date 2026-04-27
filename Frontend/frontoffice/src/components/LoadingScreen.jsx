@@ -216,8 +216,8 @@ export default function LoadingScreen({ onComplete, dataReady = false }) {
     return () => cancelAnimationFrame(rafId)
   }, [dataReady, complete])
 
-  const logo = logoMain || logoNavbar || logoLight
-  const hasLogo = Boolean(logo)
+  const logo = logoMain || logoNavbar || logoLight || '/antigone-logo.svg'
+  const hasLogo = true
 
   return (
     <>

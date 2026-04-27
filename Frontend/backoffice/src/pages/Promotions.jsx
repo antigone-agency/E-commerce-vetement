@@ -241,8 +241,6 @@ export default function Promotions() {
   const totalRevenus = stats?.totalRevenus ?? 0
   const totalUtilisations = stats?.totalUtilisations ?? 0
   const avgConversion = stats ? Math.round(stats.avgConversion) : 0
-  const bestCoupon = stats?.bestCouponCode ? { code: stats.bestCouponCode, conversion: stats.bestCouponConversion, revenus: stats.bestCouponRevenus } : null
-  const worstCoupon = stats?.worstCouponCode ? { code: stats.worstCouponCode, conversion: stats.worstCouponConversion } : null
 
   /* ── Actions ── */
   const copierCode = (code) => {
@@ -497,44 +495,6 @@ export default function Promotions() {
         <KpiCard label="Revenus générés" value={`${totalRevenus.toLocaleString('fr-FR')} DT`} sub={`${stats?.totalCoupons ?? 0} coupons total`} subColor="text-brand" icon="payments" iconBg="bg-blue-50 text-blue-600" />
         <KpiCard label="Taux d'utilisation" value={totalUtilisations} sub="utilisations totales" subColor="text-slate-400" icon="receipt_long" iconBg="bg-amber-50 text-amber-600" />
         <KpiCard label="Conversion moyenne" value={`${avgConversion}%`} sub={avgConversion >= 30 ? 'Excellent' : 'À améliorer'} subColor={avgConversion >= 30 ? 'text-brand' : 'text-amber-600'} icon="trending_up" iconBg="bg-purple-50 text-purple-600" />
-      </div>
-
-      {/* ── Smart Insights ── */}
-      <div className="bg-gradient-to-r from-brand/5 to-brand/5 rounded-xl border border-brand/10 p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="material-symbols-outlined text-brand">psychology</span>
-          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Smart Insights</h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {bestCoupon && (
-            <div className="bg-white rounded-lg border border-slate-200 p-4 flex items-start gap-3">
-              <div className="p-2 bg-brand/5 rounded-lg"><span className="material-symbols-outlined text-brand">local_fire_department</span></div>
-              <div>
-                <p className="text-[10px] font-bold text-brand uppercase tracking-wider">Meilleur coupon</p>
-                <p className="text-sm font-bold text-slate-800 mt-0.5">{bestCoupon.code}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{Math.round(bestCoupon.conversion)}% conversion · {bestCoupon.revenus?.toLocaleString('fr-FR') ?? 0} DT revenus</p>
-              </div>
-            </div>
-          )}
-          {worstCoupon && worstCoupon.code !== bestCoupon?.code && (
-            <div className="bg-white rounded-lg border border-slate-200 p-4 flex items-start gap-3">
-              <div className="p-2 bg-amber-50 rounded-lg"><span className="material-symbols-outlined text-amber-600">warning</span></div>
-              <div>
-                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">À améliorer</p>
-                <p className="text-sm font-bold text-slate-800 mt-0.5">{worstCoupon.code}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{Math.round(worstCoupon.conversion)}% conversion seulement</p>
-              </div>
-            </div>
-          )}
-          <div className="bg-white rounded-lg border border-slate-200 p-4 flex items-start gap-3">
-            <div className="p-2 bg-blue-50 rounded-lg"><span className="material-symbols-outlined text-blue-600">lightbulb</span></div>
-            <div>
-              <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Recommandation</p>
-              <p className="text-sm font-bold text-slate-800 mt-0.5">Flash promo &lt;48h</p>
-              <p className="text-xs text-slate-500 mt-0.5">+35% de conversion avec expiration courte</p>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* ── Tabs ── */}

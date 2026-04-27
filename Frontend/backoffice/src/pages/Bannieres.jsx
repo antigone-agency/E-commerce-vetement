@@ -121,10 +121,6 @@ export default function Bannieres() {
   const programmees = bannieres.filter((b) => b.statut === 'PROGRAMME').length
   const expirees   = bannieres.filter((b) => b.statut === 'EXPIRE').length
 
-  // Smart Insights — best priorité=1 active, next scheduled
-  const bestActive  = bannieres.find((b) => b.statut === 'ACTIF' && b.priorite === 1) || bannieres.find((b) => b.statut === 'ACTIF') || null
-  const nextSched   = bannieres.find((b) => b.statut === 'PROGRAMME') || null
-
   // Toggle actif
   const toggleActif = async (id) => {
     try {
@@ -182,56 +178,8 @@ export default function Bannieres() {
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <KpiCard label="Bannières Actives" value={actives} sub={`${bannieres.length} au total`} subColor="text-brand" icon="check_circle" iconBg="bg-badge/10 text-badge" progress={bannieres.length ? Math.round(actives / bannieres.length * 100) : 0} progressColor="bg-brand" />
-        <KpiCard label="Programmées" value={String(programmees).padStart(2, '0')} sub={nextSched ? `Prochaine: ${nextSched.titre.slice(0, 20)}` : 'Aucune planifiée'} subColor="text-blue-600" icon="schedule" iconBg="bg-blue-50 text-blue-600" progress={30} progressColor="bg-blue-500" />
+        <KpiCard label="Programmées" value={String(programmees).padStart(2, '0')} sub="Bannières planifiées" subColor="text-blue-600" icon="schedule" iconBg="bg-blue-50 text-blue-600" progress={30} progressColor="bg-blue-500" />
         <KpiCard label="Expirées" value={expirees} sub="Archivées" subColor="text-slate-400" icon="history" iconBg="bg-slate-100 text-slate-500" progress={100} progressColor="bg-slate-400" />
-      </div>
-
-      {/* Smart Insights */}
-      <div className="bg-gradient-to-r from-brand/5 to-brand/5 rounded-xl border border-brand/10 p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="material-symbols-outlined text-brand">psychology</span>
-          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Smart Insights</h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {bestActive ? (
-            <div className="bg-white rounded-lg border border-slate-200 p-4 flex items-start gap-3">
-              <div className="p-2 bg-brand/5 rounded-lg">
-                <span className="material-symbols-outlined text-brand">emoji_events</span>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-brand uppercase tracking-wider">Bannière prioritaire active</p>
-                <p className="text-sm font-bold text-slate-800 mt-0.5">{bestActive.titre}</p>
-                <div className="flex items-center gap-3 mt-1">
-                  <span className="text-xs text-slate-500">Position: <span className="font-bold text-slate-700">{bestActive.positionLabel}</span></span>
-                  <span className="text-xs text-slate-500">Audience: <span className="font-bold text-slate-700">{bestActive.audienceLabel}</span></span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg border border-dashed border-slate-200 p-4 flex items-center justify-center text-slate-300 text-xs">
-              Aucune bannière active
-            </div>
-          )}
-          {nextSched ? (
-            <div className="bg-white rounded-lg border border-slate-200 p-4 flex items-start gap-3">
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <span className="material-symbols-outlined text-blue-600">schedule</span>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Prochaine bannière programmée</p>
-                <p className="text-sm font-bold text-slate-800 mt-0.5">{nextSched.titre}</p>
-                <div className="flex items-center gap-3 mt-1">
-                  <span className="text-xs text-slate-500">Début: <span className="font-bold text-slate-700">{nextSched.dateDebut || '—'}</span></span>
-                  <span className="text-xs text-slate-500">Fin: <span className="font-bold text-slate-700">{nextSched.dateFin || '—'}</span></span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg border border-dashed border-slate-200 p-4 flex items-center justify-center text-slate-300 text-xs">
-              Aucune bannière programmée
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Filters */}
@@ -305,9 +253,15 @@ export default function Bannieres() {
                       const reordered = [...bannieres]
                       const [removed] = reordered.splice(dragIdx, 1)
                       reordered.splice(realIdx, 0, removed)
-                      setBannieres(reordered)
+                      // Reassign priorite based on new position (1-based)
+                      const withNewPriorities = reordered.map((b, i) => ({ ...b, priorite: i + 1 }))
+                      setBannieres(withNewPriorities)
                       setDragIdx(null); setOverIdx(null)
-                      toast.success('Ordre mis à jour')
+                      // Persist new priorities to backend
+                      withNewPriorities.forEach((b) => {
+                        bannerApi.update(b.id, { priorite: b.priorite }).catch(() => {})
+                      })
+                      toast.success('Ordre et priorités mis à jour')
                     }}
                     onDragEnd={() => { setDragIdx(null); setOverIdx(null) }}
                     className={`hover:bg-slate-50 transition-colors group ${isExpired ? 'bg-slate-50/30' : ''} ${overIdx === realIdx ? 'border-t-2 border-brand' : ''}`}
@@ -364,8 +318,10 @@ export default function Bannieres() {
 
                     {/* Priority */}
                     <td className="px-4 py-2.5 text-center">
-                      <div className="flex items-center justify-center gap-1" title={`Priorité ${prio.label}`}>
-                        <span className={`material-symbols-outlined text-[16px] ${prio.color}`}>{prio.icon}</span>
+                      <div className="flex items-center justify-center gap-1" title={`Priorité ${b.priorite}`}>
+                        <span className={`material-symbols-outlined text-[16px] ${b.priorite === 1 ? 'text-red-500' : b.priorite === 2 ? 'text-amber-500' : 'text-slate-400'}`}>
+                          {b.priorite === 1 ? 'local_fire_department' : b.priorite === 2 ? 'north' : 'south'}
+                        </span>
                         <span className="text-xs font-bold text-slate-600">{b.priorite}</span>
                       </div>
                     </td>

@@ -267,7 +267,7 @@ export default function Profile() {
   const inputCls = 'w-full px-4 py-3 border border-neutral-200 bg-neutral-50 text-sm focus:ring-1 focus:ring-black focus:border-black outline-none transition-all'
 
   return (
-    <main className="pt-28 pb-20 px-6 md:px-12 max-w-7xl mx-auto">
+    <div className="flex-1 pt-28 pb-20 px-6 md:px-12 max-w-7xl mx-auto w-full">
       {/* Header */}
       <header className="mb-16">
         <h1 className="text-5xl font-black tracking-tighter uppercase mb-2">MON COMPTE</h1>
@@ -786,6 +786,6 @@ export default function Profile() {
           </div>
         </div>
       )}
-    </main>
+    </div>
   )
 }

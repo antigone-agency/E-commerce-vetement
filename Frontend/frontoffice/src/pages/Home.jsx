@@ -147,7 +147,16 @@ export default function Home() {
               : `hero-${heroBanner?.animation || 'fade'}`
           }`}
         >
-          {heroBanner?.imageUrl && (
+          {heroBanner?.videoUrl ? (
+            <iframe
+              src={heroBanner.videoUrl}
+              className="w-full h-full object-cover pointer-events-none"
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+              title="Hero video"
+              style={{ border: 'none', position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+            />
+          ) : heroBanner?.imageUrl && (
             <img
               src={heroBanner.imageUrl}
               alt={heroBanner.titre || 'Hero banner'}
